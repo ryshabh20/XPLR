@@ -24,5 +24,5 @@ export const SignUpSchema = z.object({
 });
 
 export const OtpSchema = z.object({
-  otp: z.string().min(6).max(6),
+  otp: z.string().min(6, { message: "Otp must contain 6 characters" }).max(6),
 });

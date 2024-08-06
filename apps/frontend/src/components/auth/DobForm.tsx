@@ -62,7 +62,7 @@ function DobForm() {
         </Text>
       </div>
       <Button
-        disabled={false}
+        disabled={!validAge}
         type="button"
         style="login"
         className="!w-11/12 mx-auto !mb-3 "

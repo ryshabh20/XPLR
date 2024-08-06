@@ -1,4 +1,4 @@
-import express, { Express } from "express";
+import express, { Express, NextFunction, Request, Response } from "express";
 import authRouter from "./routes/auth.route";
 import dotnev from "dotenv";
 import cors from "cors";
@@ -37,3 +37,13 @@ app.use("/api/user", authRouter);
 app.listen(8080, () =>
   console.log(`[server]:Server is running at http://localhost:${port}`)
 );
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  return res.status(statusCode).json({
+    success: false,
+    statusCode,
+    message,
+  });
+});

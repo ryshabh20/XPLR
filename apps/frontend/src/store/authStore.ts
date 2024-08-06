@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 type SignUpState = 0 | 1 | 2;
-type UserSignUpState = {
+export type UserSignUpState = {
   username: string;
   email: string;
   password: string;

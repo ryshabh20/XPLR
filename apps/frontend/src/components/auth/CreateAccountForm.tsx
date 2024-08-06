@@ -4,47 +4,44 @@ import Button from "@/components/common/button";
 import Text from "../common/text";
 import { FieldValues, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import useAuthStore from "@/store/authStore";
+import useAuthStore, { UserSignUpState } from "@/store/authStore";
 import { SignUpSchema } from "../../../utils/ZodSchemas";
-import { useToast } from "../../../custom-hooks/useToast";
-import useApi from "../../../custom-hooks/useApi";
 import ErrorComponent from "../../../custom-ui/ErrorComponent";
 import { useState } from "react";
+import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 export default function CreateAccountForm() {
-  const signUpUser = useApi({
-    method: "POST",
-    queryKey: ["registerUser"],
-    url: "/user/signup",
-  })?.post;
   const { changeSignUpState, changeUserSignUpDataState } = useAuthStore(
     (state) => state
   );
+
   const [errorMessage, setErrorMessage] = useState("");
-  const { handleToast } = useToast();
-  const {
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm({
+  const [valid, setValid] = useState({
+    username: false,
+    email: false,
+  });
+
+  const { handleSubmit, control, formState, getFieldState } = useForm({
     mode: "onChange",
     resolver: zodResolver(SignUpSchema),
   });
 
   const onSubmit = async (data: FieldValues) => {
     try {
-      console.log(data);
-      changeUserSignUpDataState(data);
+      changeUserSignUpDataState(data as UserSignUpState);
       changeSignUpState(1);
-      // const result = await signUpUser?.mutateAsync(data);
-      // if (result) {
-      //   changeSignUpState(1);
-      // }
     } catch (error: any) {
       console.log(error);
       setErrorMessage(error.response.data.message);
-      // handleToast(error.message, "error");
     }
   };
+  const isAnyFieldInvalid = Object.values(valid).some((el) => el === false);
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      console.log(tokenResponse);
+    },
+    flow: "auth-code",
+  });
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="border p-5 space-y-5">
       <Img
@@ -67,6 +64,7 @@ export default function CreateAccountForm() {
         type="submit"
         style="login"
         className="tracking-normal"
+        onClick={loginWithGoogle}
         leftIcon={
           <Img
             src="/google-icon.svg"
@@ -89,45 +87,53 @@ export default function CreateAccountForm() {
       <div className="flex flex-col gap-2">
         <Input
           name="email"
+          checkWhat="email"
           control={control}
+          stateVal={valid}
+          setterFn={setValid}
           placeholder="Email or Phone Number"
           type="email"
-          errors={errors}
+          formState={formState}
+          time={500}
           minLength={5}
           maxLength={45}
-          validationSchema={{
-            required: "Email or Phone Number is required",
-          }}
+          getFieldState={getFieldState}
         />
         <Input
           name="fullname"
           control={control}
           placeholder="Full Name"
-          errors={errors}
-          validationSchema={{
-            required: "Full Name is required",
-          }}
+          getFieldState={getFieldState}
+          formState={formState}
         />
         <Input
           name="username"
           control={control}
+          stateVal={valid}
+          setterFn={setValid}
+          checkWhat="username"
+          time={500}
           placeholder="Username"
-          errors={errors}
-          validationSchema={{
-            required: "Password is required",
-          }}
+          getFieldState={getFieldState}
+          formState={formState}
         />
         <Input
           name="password"
           control={control}
           type="password"
           placeholder="Password"
-          errors={errors}
-          validationSchema={{
-            required: "Password is required",
-          }}
+          getFieldState={getFieldState}
+          formState={formState}
         />
-        <Button type="submit" style="login">
+        <Button
+          type="submit"
+          style="login"
+          disabled={!formState.isValid || isAnyFieldInvalid}
+          className={`${
+            (!formState.isValid && "bg-gray-300") ||
+            (isAnyFieldInvalid && "bg-gray-300")
+          }`}
+        >
           Sign Up
         </Button>
         <ErrorComponent message={errorMessage} />

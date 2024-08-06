@@ -1,6 +1,6 @@
 import React from "react";
 
-const sizes = {
+export const sizes = {
   xs: "text-xs   lg:text-sm",
   xssemibold: "text-xs font-semibold lg:text-sm",
   sm: "text-sm lg:text-base",

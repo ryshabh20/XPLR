@@ -3,7 +3,7 @@ import axios from "axios";
 
 const queryClient = new QueryClient();
 type Method = "GET" | "POST" | "PUT" | "DELETE";
-type apiParamsType = {
+export type apiParamsType = {
   method: Method;
   queryKey: Array<string>;
   url: string;

@@ -1,5 +1,4 @@
 "use client";
-export const toastProvider = () => {};
 
 import React, { createContext, useContext } from "react";
 import { ToastType, Toaster, toast } from "react-hot-toast";

@@ -7,37 +7,39 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "../common/button";
 import useAuthStore from "@/store/authStore";
 import useApi from "../../../custom-hooks/useApi";
-import { verify } from "crypto";
 import ErrorComponent from "../../../custom-ui/ErrorComponent";
 import { useState } from "react";
+import ResendOtp from "./ui/ResendOtp";
 
 const MailVerification = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, dirtyFields },
   } = useForm({
-    mode: "onSubmit",
+    mode: "onChange",
     resolver: zodResolver(OtpSchema),
   });
   const [errorMessage, setErrorMessage] = useState("");
   const { changeSignUpState, userSignUpDataState } = useAuthStore(
     (state) => state
   );
+
   const verifyOtp = useApi({
     method: "POST",
     queryKey: ["verify-otp"],
     url: "/user/verify-otp",
   })?.post;
-  const onSubmit = (data: FieldValues) => {
+  const onSubmit = async (data: FieldValues) => {
     try {
-      const isVerified = verifyOtp?.mutateAsync({
+      const isVerified = await verifyOtp?.mutateAsync({
         otp: data,
         data: userSignUpDataState,
       });
-    } catch (error) {}
+    } catch (error: any) {
+      setErrorMessage(error.response.data.message);
+    }
   };
-
   return (
     <form
       className="border p-4 space-y-5 text-center "
@@ -50,23 +52,25 @@ const MailVerification = () => {
         alt="mail"
         className="mx-auto"
       />
-      <Text>Enter confirmation code</Text>
-      <Text size="smsemibold" className="block">
+      <Text size="smsemibold">Enter confirmation code</Text>
+      <Text className="block" size="xs">
         Enter the confirmation code that we have sent to{" "}
+        {userSignUpDataState.email}.<ResendOtp />
       </Text>
       <Input
+        maxLength={6}
         placeholder="Confirmation Code"
         name="otp"
         control={control}
         errors={errors}
         className="!rounded-md"
       />
-      <ErrorComponent message={errorMessage} />
+
       <Button
-        disabled={false}
+        disabled={!!errors.otp?.message}
         type="submit"
         style="login"
-        className="mx-auto !mb-3 "
+        className={`mx-auto !mb-3 ${(!!errors.otp?.message || !dirtyFields.otp) && "bg-gray-300"}`}
       >
         Next
       </Button>
@@ -74,11 +78,17 @@ const MailVerification = () => {
         size="smsemibold"
         color="text-blue-400"
         className="hover:cursor-pointer"
-        onClick={() => changeSignUpState(1)}
+        onClick={() => changeSignUpState(0)}
       >
         {" "}
         Go Back
       </Text>
+      <ErrorComponent
+        message={errorMessage}
+        className="mt-1"
+        size="xssemibold"
+        color="text-red-400"
+      />
     </form>
   );
 };

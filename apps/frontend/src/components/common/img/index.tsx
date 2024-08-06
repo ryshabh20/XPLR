@@ -10,7 +10,6 @@ type Props = React.DetailedHTMLProps<
   alt: string;
   width: number;
   height: number;
-  className?: string;
 };
 export const Img: React.FC<React.PropsWithChildren<Props>> = ({
   src,

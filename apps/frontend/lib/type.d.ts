@@ -2,9 +2,12 @@ import {
   Control,
   FieldErrors,
   FieldValues,
+  FormState,
   RegisterOptions,
+  UseFormGetFieldState,
   UseFormRegister,
 } from "react-hook-form";
+import { apiParamsType } from "../custom-hooks/useApi";
 
 // export enum ValidationTypes {
 //   name = "name",
@@ -27,16 +30,21 @@ type InputProps = Omit<
     className: string;
     name: string;
     placeholder: string;
+    checkWhat: string;
     label: string;
     prefix: React.ReactNode;
+    stateVal: any;
+    setterFn: React.Dispatch<React.SetStateAction<any>>;
     suffix: React.ReactNode;
     isChange: (v: any) => void;
     reacthook: boolean;
     maxLength: number;
-    validationSchema: RegisterOptions<TFieldValues, TFieldName>;
-
-    errors: FieldErrors<FieldValues>;
+    time: number;
+    apiParams: apiParamsType;
+    regex: string;
   }> & {
+    getFieldState: UseFormGetFieldState<FieldValues>;
+    formState: FormState<FieldValues>;
     control: Control;
     // validationType: types;
   };

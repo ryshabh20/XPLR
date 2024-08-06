@@ -33,9 +33,6 @@ export default function Login() {
             errors={errors}
             minLength={5}
             maxLength={10}
-            validationSchema={{
-              required: "Email is required",
-            }}
           />
           <Input
             name="password"
@@ -44,9 +41,6 @@ export default function Login() {
             errors={errors}
             minLength={5}
             maxLength={10}
-            validationSchema={{
-              required: "Password is required",
-            }}
           />
           <Button type="submit" style="login">
             Login
