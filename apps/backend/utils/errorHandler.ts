@@ -1,7 +1,10 @@
-export const errorHandler = (statusCode: number, message: string) => {
-  const error: any = new Error(message);
-  error.statusCode = statusCode;
-  error.message = message;
+import { ApiError } from "../src/handlers/ApiError";
 
-  return error;
+export const errorHandler = (
+  statusCode: number,
+  message: string,
+  errors: string[] = [],
+  stack: string = ""
+) => {
+  throw new ApiError(statusCode, message, errors, stack, true);
 };

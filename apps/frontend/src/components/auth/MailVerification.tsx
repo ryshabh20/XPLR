@@ -12,11 +12,7 @@ import { useState } from "react";
 import ResendOtp from "./ui/ResendOtp";
 
 const MailVerification = () => {
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, dirtyFields },
-  } = useForm({
+  const { control, handleSubmit, formState, getFieldState } = useForm({
     mode: "onChange",
     resolver: zodResolver(OtpSchema),
   });
@@ -62,15 +58,16 @@ const MailVerification = () => {
         placeholder="Confirmation Code"
         name="otp"
         control={control}
-        errors={errors}
+        formState={formState}
+        getFieldState={getFieldState}
         className="!rounded-md"
       />
 
       <Button
-        disabled={!!errors.otp?.message}
+        disabled={!!formState.errors.otp?.message}
         type="submit"
         style="login"
-        className={`mx-auto !mb-3 ${(!!errors.otp?.message || !dirtyFields.otp) && "bg-gray-300"}`}
+        className={`mx-auto !mb-3 ${!!formState.errors.otp?.message && "bg-gray-300"}`}
       >
         Next
       </Button>

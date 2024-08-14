@@ -19,11 +19,11 @@ model user {
   fullname String @db.VarChar(20)
   email String @unique @db.VarChar(45)
   password String? @db.VarChar(45)
-  otp String? @db.VarChar(45)
-  otp_expiration DateTime?
+  refreshToken String?
   isVerified Boolean?
   createdAt DateTime @default(now()) 
   updatedAt DateTime @updatedAt 
+  isGoogleAuthenticated Boolean @default(false)
 }
 
 

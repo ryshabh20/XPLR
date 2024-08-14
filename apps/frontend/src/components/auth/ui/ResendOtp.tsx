@@ -35,7 +35,7 @@ const ResendOtp = () => {
             await sendOtp?.mutateAsync({ email });
             setCounter(90);
           } catch (error: any) {
-            handleToast(error, "error");
+            handleToast(error.message, "error");
           }
         }
       }}

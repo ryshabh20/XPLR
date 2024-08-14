@@ -8,18 +8,18 @@ import useAuthStore, { UserSignUpState } from "@/store/authStore";
 import { SignUpSchema } from "../../../utils/ZodSchemas";
 import ErrorComponent from "../../../custom-ui/ErrorComponent";
 import { useState } from "react";
-import { useGoogleLogin } from "@react-oauth/google";
-import axios from "axios";
+import { useGoogleAuth } from "../../../utils/LogInWithGoogle";
 export default function CreateAccountForm() {
   const { changeSignUpState, changeUserSignUpDataState } = useAuthStore(
     (state) => state
   );
-
+  const { loginWithGoogle } = useGoogleAuth();
   const [errorMessage, setErrorMessage] = useState("");
   const [valid, setValid] = useState({
     username: false,
     email: false,
   });
+  console.log("this is the valid state", valid);
 
   const { handleSubmit, control, formState, getFieldState } = useForm({
     mode: "onChange",
@@ -36,12 +36,7 @@ export default function CreateAccountForm() {
     }
   };
   const isAnyFieldInvalid = Object.values(valid).some((el) => el === false);
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      console.log(tokenResponse);
-    },
-    flow: "auth-code",
-  });
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="border p-5 space-y-5">
       <Img

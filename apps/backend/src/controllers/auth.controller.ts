@@ -1,9 +1,26 @@
 import { NextFunction, Request, Response } from "express";
 import prisma from "../../prisma/prisma";
 import { SendOtp } from "../../utils/send.otp";
-import axios from "axios";
-import { redisClient } from "..";
+import { oAuth2Client, redisClient } from "..";
+import { errorHandler } from "../../utils/errorHandler";
+import { generateNewTokens } from "../../utils/tokens";
+import { HttpStatusCode } from "axios";
 
+const checkUserExistence = async (
+  identifier: string,
+  field: "email" | "username",
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { [field]: identifier } as { [K in typeof field]: string },
+    });
+    res.json({ exist: !!user });
+  } catch (error) {
+    next(error);
+  }
+};
 export const UserNameChecker = async (
   req: Request,
   res: Response,
@@ -12,33 +29,39 @@ export const UserNameChecker = async (
   const email = req.query.email as string;
   const username = req.query.username as string;
   if (!email && !username) {
-    res.json({
-      message: "please provide a valid username/email.",
-    });
+    errorHandler(
+      HttpStatusCode.BadRequest,
+      "please provide a valid username/email."
+    );
   }
   if (email) {
-    try {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (user) {
-        res.json({ exist: true });
-      } else {
-        res.json({ exist: false });
-      }
-    } catch (error: any) {
-      next(error);
-    }
-  } else if (username) {
-    try {
-      const user = await prisma.user.findUnique({ where: { username } });
-      if (user) {
-        res.json({ exists: true });
-      } else {
-        res.json({ exist: false });
-      }
-    } catch (error: any) {
-      next(error);
-    }
+    checkUserExistence(email, "email", res, next);
   }
+  if (username) {
+    checkUserExistence(username, "username", res, next);
+  }
+};
+
+export const getUserDetails = async (idToken: string) => {
+  const ticket = await oAuth2Client.verifyIdToken({
+    idToken,
+    audience: process.env.CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  if (payload) {
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      emailVerified: payload.email_verified,
+      name: payload.name,
+      givenName: payload.given_name,
+      familyName: payload.family_name,
+      picture: payload.picture,
+    };
+  }
+
+  errorHandler(HttpStatusCode.BadRequest, "Unable to retrieve user details");
 };
 
 export const signup = async (
@@ -54,9 +77,10 @@ export const signup = async (
       where: { OR: [{ email }, { username }] },
     });
     if (isUserExist) {
-      res.status(401).json({
-        message: "User with this email already exists",
-      });
+      errorHandler(
+        HttpStatusCode.Conflict,
+        "User with this email already exists"
+      );
     } else {
       const user = await prisma.user.create({
         data,
@@ -78,18 +102,33 @@ export const GoogleLogin = async (
   next: NextFunction
 ) => {
   const { code } = req.body;
-  try {
-    const { data } = await axios.post("<https://oauth2.googleapis.com/token>", {
-      client_id: process.env.CLIENT_ID,
-      client_secret: process.env.CLIENT_SECRET,
-      code,
-      // redirect_uri: process.env.REDIRECT_URI,
-      grant_type: "authorization_code",
+
+  const { tokens } = await oAuth2Client.getToken(code);
+
+  if (!tokens) {
+    errorHandler(HttpStatusCode.Unauthorized, "Please try to login again");
+  } else {
+    const user = await getUserDetails(tokens.id_token as string);
+    const dbUser = await prisma.user.findUnique({
+      where: {
+        email: user?.email,
+      },
     });
-    console.log("data", data);
-    return res.json({ message: "wohoo", data });
-  } catch (error) {
-    console.log("this is the error", error);
+
+    if (user) {
+      await prisma.user.create({
+        data: {
+          email: user?.email || "",
+          fullname: user?.name || "",
+          username: user?.email || "",
+          refreshToken: tokens.refresh_token,
+        },
+      });
+    }
+    oAuth2Client.setCredentials(tokens);
+    res.cookie("access_token", tokens.access_token);
+    res.cookie("refresh_token", tokens.refresh_token);
+    return res.json({ user, tokens });
   }
 };
 
@@ -102,30 +141,28 @@ export const OtpGenerator = async (
   const { email } = data;
 
   try {
-    const isOtpExist = await redisClient.hmGet(email, [
+    const [_, otpExpiration] = await redisClient.hmGet(email, [
       "otp",
       "otp_expiration",
     ]);
-    if (isOtpExist[1]) {
-      const previousExpiredTime = new Date(isOtpExist[1]).getTime();
-      const currentTime = Date.now();
-      const elapsedTime = currentTime - previousExpiredTime;
-      console.log(elapsedTime);
-      if (elapsedTime < 60) {
-        res.status(200).json({
-          message: "Please wait 1 minute before sending out another otp",
-        });
-      } else {
-        const isOTPSent = await SendOtp({ email });
-        if (isOTPSent) {
-          res.status(200).json({ message: "OTP resent successfully" });
-        }
-      }
-    } else {
+    if (!otpExpiration) {
       const isOTPSent = await SendOtp({ email });
       if (isOTPSent) {
         res.status(200).json({ message: "OTP sent successfully" });
       }
+    }
+    const previousExpiredTime =
+      new Date(otpExpiration).getTime() - 9 * 60 * 1000;
+    const currentTime = Date.now();
+    const elapsedTime = (currentTime - previousExpiredTime) / 1000;
+    if (elapsedTime < 60) {
+      return res.status(HttpStatusCode.TooManyRequests).json({
+        message: "Please wait 1 minute before sending out another OTP.",
+      });
+    }
+    const isOTPSent = await SendOtp({ email });
+    if (isOTPSent) {
+      return res.status(200).json({ message: "OTP resent successfully" });
     }
   } catch (error: any) {
     next(error);
@@ -137,41 +174,75 @@ export const VerifyOtp = async (
   res: Response,
   next: NextFunction
 ) => {
-  console.log(req.body);
   try {
-    const body = req.body;
-    const data = body.data;
-    const otp = body.otp.otp;
+    const data = req.body.data;
+    const otp = req.body.otp.otp;
 
-    console.log("otp,data", otp, data);
-
-    const redisUser = await redisClient.hmGet(data.email, [
+    const [storedOtp, otpExpiration] = await redisClient.hmGet(data.email, [
       "otp",
       "otp_expiration",
     ]);
-    const currentTime = Date.now();
-    const previousExpiredTime = new Date(redisUser[1]).getTime();
-    const elapsedTime = currentTime - previousExpiredTime > 300;
-    console.log("this is the otp", otp, "this is the redisUser", redisUser[0]);
-    if (!redisUser || elapsedTime) {
+
+    if (!storedOtp || !otpExpiration) {
       await redisClient.del(data.email);
-      res.status(200).json({ message: "Please request a new OTP." });
-    } else if (redisUser[0] !== otp) {
-      res
-        .status(401)
-        .json({ message: "That code isn't valid. You can request a new one." });
-    } else {
-      const user = await prisma.user.create({
-        data,
+      errorHandler(403, "Please request a new OTP.");
+    }
+
+    const isExpired = Date.now() > new Date(otpExpiration).getTime();
+
+    if (isExpired) {
+      await redisClient.del(data.email);
+      errorHandler(HttpStatusCode.Forbidden, "Please request a new OTP.");
+    }
+    if (storedOtp !== otp) {
+      errorHandler(
+        HttpStatusCode.BadRequest,
+        "That code isn't valid. You can request a new one."
+      );
+    }
+    const user = await prisma.user.create({
+      data,
+    });
+    if (user) {
+      res.status(200).json({
+        message: "User Created Successfully",
       });
-      if (user) {
-        res.status(200).json({
-          message: "User Created Successfully",
-        });
-      }
     }
   } catch (error: any) {
-    console.log(error);
     next(error);
   }
+};
+
+export const Login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email } = req.body.data;
+    const pass = req.body.data.password;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || pass !== user.password) {
+      errorHandler(HttpStatusCode.Unauthorized, "Invalid Credentials");
+    }
+    await generateNewTokens(email, res);
+    return res.json({ message: "User Logged In" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const OauthGoogle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  // const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+
+  // console.log("Full URL:", fullUrl);
+  console.log("called");
+  console.log("this is the req", req);
+  console.log("this is the request query", req.query);
+  console.log("this is the header", req.headers);
+  return res.json({ message: "success" });
 };

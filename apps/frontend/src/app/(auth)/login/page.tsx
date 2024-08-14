@@ -2,18 +2,29 @@
 import { Img } from "@/components/common/img";
 import Input from "@/components/common/input";
 import Text from "@/components/common/text";
-import { useForm } from "react-hook-form";
+import { FieldValues, useForm } from "react-hook-form";
 import Link from "next/link";
 import Button from "@/components/common/button";
+import useApi from "../../../../custom-hooks/useApi";
+import { useGoogleAuth } from "../../../../utils/LogInWithGoogle";
 
 export default function Login() {
-  const {
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm();
+  const { handleSubmit, control, formState, getFieldState } = useForm();
+  const login = useApi({
+    method: "POST",
+    queryKey: ["login-with-user"],
+    url: "/user/login",
+    config: {
+      withCredentials: true,
+    },
+  })?.post;
+  const { loginWithGoogle } = useGoogleAuth();
 
-  const onSubmit = (data: any) => console.log("this is the data", data);
+  const onSubmit = async (data: FieldValues) => {
+    try {
+      const response = await login?.mutateAsync({ data });
+    } catch (error) {}
+  };
   return (
     <div className="flex flex-col gap-3 shadow-xl w-full xl:w-96">
       <form onSubmit={handleSubmit(onSubmit)} className="border p-5 space-y-5">
@@ -29,18 +40,17 @@ export default function Login() {
           <Input
             name="email"
             control={control}
+            getFieldState={getFieldState}
             placeholder="Email or Username"
-            errors={errors}
-            minLength={5}
-            maxLength={10}
+            formState={formState}
           />
           <Input
             name="password"
             control={control}
+            type="password"
+            getFieldState={getFieldState}
             placeholder="Password"
-            errors={errors}
-            minLength={5}
-            maxLength={10}
+            formState={formState}
           />
           <Button type="submit" style="login">
             Login
@@ -54,7 +64,7 @@ export default function Login() {
           <div className="w-1/2 border border-gray-300 h-0" />
         </div>
         <div className="flex flex-col gap-3 justify-center items-center">
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-1 items-center" onClick={loginWithGoogle}>
             <Img
               src="/google-icon.svg"
               height={25}
