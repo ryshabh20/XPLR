@@ -4,18 +4,18 @@ import { useRouter } from "next/navigation";
 
 export const useGoogleAuth = () => {
   const signInWithGoogle = useApi({
-    url: "/user/google-login",
+    url: "/auth/google",
     method: "POST",
     queryKey: ["login-with-google"],
-    config: { withCredentials: true },
   })?.post;
   const router = useRouter();
   const loginWithGoogle = useGoogleLogin({
     onSuccess: async (authCode) => {
       const result = await signInWithGoogle?.mutateAsync(authCode);
-      router.push("/drive");
+      router.push("/");
     },
     flow: "auth-code",
   });
+
   return { loginWithGoogle };
 };

@@ -1,21 +1,30 @@
 import { NextFunction, Request, Response } from "express";
+import { verfiyToken } from "../../utils/tokens";
+import { access } from "fs";
+import { user } from "@prisma/client";
 import { errorHandler } from "../../utils/errorHandler";
-import { generateNewTokens } from "../../utils/tokens";
+import { HttpStatusCode } from "axios";
+import { error } from "console";
+declare global {
+  namespace Express {
+    interface Request {
+      user: user;
+    }
+  }
+}
 
-export const TokenValidator = (
+export const AuthCheck = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   const cookies = req.cookies;
   const accessToken = cookies["access_token"];
-  const refreshToken = cookies["refresh_token"];
-  if (!accessToken || !refreshToken) {
-    next(errorHandler(401, "unauthorized"));
+  const user = await verfiyToken(accessToken);
+  if (!user) {
+    console.log("crashed here");
+    return errorHandler(HttpStatusCode.Unauthorized, "Please login again");
   }
-  if (!accessToken && refreshToken) {
-    generateNewTokens(refreshToken, res);
-  }
-
+  req.user = user;
   next();
 };

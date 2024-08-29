@@ -11,10 +11,9 @@ class ErrorHandler {
 
   public isTrustedError(error: Error) {
     if (error instanceof ApiError) {
-      console.log("this is the erro", error.isOperational);
+      console.log("this is the error", error.isOperational);
       return error.isOperational;
     }
-    console.log("false");
     return false;
   }
 }

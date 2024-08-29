@@ -28,13 +28,13 @@ type InputProps = Omit<
 > &
   Partial<{
     className: string;
+    inputClassName: string;
     name: string;
     placeholder: string;
     checkWhat: string;
     label: string;
     prefix: React.ReactNode;
-    stateVal: any;
-    setterFn: React.Dispatch<React.SetStateAction<any>>;
+    IsInputCorrect: boolean;
     suffix: React.ReactNode;
     isChange: (v: any) => void;
     reacthook: boolean;
@@ -42,9 +42,10 @@ type InputProps = Omit<
     time: number;
     apiParams: apiParamsType;
     regex: string;
-  }> & {
+    changeHandler: any;
     getFieldState: UseFormGetFieldState<FieldValues>;
     formState: FormState<FieldValues>;
+  }> & {
     control: Control;
     // validationType: types;
   };
@@ -54,4 +55,18 @@ type SignUpUser = {
   username: string;
   email: string;
   password: string;
+};
+
+type UserFromBackend = {
+  id: string;
+  username: string;
+  fullname: string;
+  email: string;
+  password?: string;
+  refreshToken?: string;
+  isVerified?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  isGoogleAuthenticated?: boolean;
+  avatar?: string;
 };

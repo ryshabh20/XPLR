@@ -7,24 +7,30 @@ import Link from "next/link";
 import Button from "@/components/common/button";
 import useApi from "../../../../custom-hooks/useApi";
 import { useGoogleAuth } from "../../../../utils/LogInWithGoogle";
+import { useRouter } from "next/navigation";
+import ErrorComponent from "../../../../custom-ui/ErrorComponent";
+import { useState } from "react";
 
 export default function Login() {
+  const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState("");
   const { handleSubmit, control, formState, getFieldState } = useForm();
   const login = useApi({
     method: "POST",
     queryKey: ["login-with-user"],
-    url: "/user/login",
-    config: {
-      withCredentials: true,
-    },
+    url: "/auth/login",
   })?.post;
   const { loginWithGoogle } = useGoogleAuth();
 
   const onSubmit = async (data: FieldValues) => {
     try {
-      const response = await login?.mutateAsync({ data });
-    } catch (error) {}
+      await login?.mutateAsync({ data });
+      router.push("/");
+    } catch (error: any) {
+      setErrorMessage(error.response.data.message);
+    }
   };
+
   return (
     <div className="flex flex-col gap-3 shadow-xl w-full xl:w-96">
       <form onSubmit={handleSubmit(onSubmit)} className="border p-5 space-y-5">
@@ -52,37 +58,46 @@ export default function Login() {
             placeholder="Password"
             formState={formState}
           />
+          <ErrorComponent
+            message={errorMessage}
+            className="mt-1"
+            size="xssemibold"
+            color="text-red-400"
+          />
           <Button type="submit" style="login">
             Login
           </Button>
         </div>
         <div className="flex items-center ">
           <div className="w-1/2 border border-gray-300 h-0" />
-          <Text size="smsemibold" color="text-gray-400" className="px-4">
+          <Text size="basesemibold" color="text-gray-400" className="px-4">
             OR
           </Text>
           <div className="w-1/2 border border-gray-300 h-0" />
         </div>
         <div className="flex flex-col gap-3 justify-center items-center">
-          <div className="flex gap-1 items-center" onClick={loginWithGoogle}>
+          <div
+            className="flex gap-1 items-center hover:cursor-pointer shadow-lg  p-2.5 rounded-md"
+            onClick={loginWithGoogle}
+          >
             <Img
               src="/google-icon.svg"
               height={25}
               width={25}
               alt="google icon"
             />
-            <Text size="smsemibold" color="text-blue-500">
+            <Text size="basesemibold" color="text-blue-500">
               Log in with Google
             </Text>
           </div>
-          <Text size="xs" color="text-blue-900 ml-3">
+          <Text size="base" color="text-blue-900 ml-3">
             Forgotten your password?
           </Text>
         </div>
       </form>
       <div className="border p-5  flex justify-center gap-2">
-        <Text size="sm">Don't have an account?</Text>
-        <Text size="smsemibold" color="text-blue-400 hover:cursor-pointer">
+        <Text size="base">Don't have an account?</Text>
+        <Text size="basesemibold" color="text-blue-400 hover:cursor-pointer">
           <Link href={"/register"}>Sign Up</Link>
         </Text>
       </div>

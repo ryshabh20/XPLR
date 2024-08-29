@@ -4,6 +4,8 @@ import "./globals.css";
 import ReactQueryProvider from "../../providers/ReactQueryProvider";
 import { ToastProvider } from "../../custom-hooks/useToast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { AuthProvider, useAuth } from "../../custom-hooks/useAuth";
+import { MainSideBar } from "../components/common/sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +24,11 @@ export default function RootLayout({
       <body className={`${inter.className} h-dvh bg-white`}>
         <ReactQueryProvider>
           <GoogleOAuthProvider clientId="19202244146-puac5q9i2qquf8tj8b1qam2ha3teuukr.apps.googleusercontent.com">
-            <ToastProvider>{children}</ToastProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <MainSideBar>{children}</MainSideBar>
+              </ToastProvider>
+            </AuthProvider>
           </GoogleOAuthProvider>
         </ReactQueryProvider>
       </body>

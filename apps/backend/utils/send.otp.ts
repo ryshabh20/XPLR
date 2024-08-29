@@ -6,6 +6,7 @@ import generateOTP from "./otp.generator";
 export const SendOtp = async ({ email }: { email: string }) => {
   try {
     const otp = generateOTP();
+    console.log("this the otp", otp);
     const subject = "Email Verification";
     const message = `Your OTP code is: ${otp}`;
 
@@ -13,6 +14,7 @@ export const SendOtp = async ({ email }: { email: string }) => {
     const entryCreated = await redisClient.hSet(email, {
       otp,
       otp_expiration: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now()).toISOString(),
     });
     return true;
   } catch (error: any) {

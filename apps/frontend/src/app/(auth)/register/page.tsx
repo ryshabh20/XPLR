@@ -16,8 +16,8 @@ export default function Register() {
       {signUpState === 1 && <DobForm />}
       {signUpState === 2 && <MailVerification />}
       <div className="border p-5  flex justify-center gap-2">
-        <Text size="sm">Have an account?</Text>
-        <Text size="smsemibold" color="text-blue-400 hover:cursor-pointer">
+        <Text size="base">Have an account?</Text>
+        <Text size="basesemibold" color="text-blue-400 hover:cursor-pointer">
           <Link href={"/login"}>Log In</Link>
         </Text>
       </div>

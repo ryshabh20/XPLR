@@ -11,7 +11,7 @@ const ResendOtp = () => {
   const sendOtp = useApi({
     method: "POST",
     queryKey: ["sendOtp"],
-    url: "/user/otp",
+    url: "/auth/otp",
   })?.post;
   useEffect(() => {
     if (counter > 0) {
@@ -26,11 +26,11 @@ const ResendOtp = () => {
   }, [counter]);
   return (
     <Text
-      size="xssemibold"
+      size="smsemibold"
       color={counter <= 0 ? "text-blue-500" : "text-gray-500"}
       className={`hover:cursor-default ${counter <= 0 && "hover:cursor-pointer"}`}
       onClick={async () => {
-        if (counter <= 0) {
+        if (counter > 0) {
           try {
             await sendOtp?.mutateAsync({ email });
             setCounter(90);

@@ -10,8 +10,10 @@ import useApi from "../../../custom-hooks/useApi";
 import ErrorComponent from "../../../custom-ui/ErrorComponent";
 import { useState } from "react";
 import ResendOtp from "./ui/ResendOtp";
+import { useRouter } from "next/navigation";
 
 const MailVerification = () => {
+  const router = useRouter();
   const { control, handleSubmit, formState, getFieldState } = useForm({
     mode: "onChange",
     resolver: zodResolver(OtpSchema),
@@ -23,8 +25,8 @@ const MailVerification = () => {
 
   const verifyOtp = useApi({
     method: "POST",
-    queryKey: ["verify-otp"],
-    url: "/user/verify-otp",
+    queryKey: ["verifyOtp"],
+    url: "/auth/verify",
   })?.post;
   const onSubmit = async (data: FieldValues) => {
     try {
@@ -32,6 +34,7 @@ const MailVerification = () => {
         otp: data,
         data: userSignUpDataState,
       });
+      router.push("/login");
     } catch (error: any) {
       setErrorMessage(error.response.data.message);
     }
@@ -49,7 +52,7 @@ const MailVerification = () => {
         className="mx-auto"
       />
       <Text size="smsemibold">Enter confirmation code</Text>
-      <Text className="block" size="xs">
+      <Text className="block" size="base">
         Enter the confirmation code that we have sent to{" "}
         {userSignUpDataState.email}.<ResendOtp />
       </Text>

@@ -2,6 +2,10 @@ import "./instrument";
 import "express-async-errors";
 import express, { Express, NextFunction, Request, Response } from "express";
 import authRouter from "./routes/auth.route";
+import conversationRouter from "./routes/conversations.route";
+import messageRouter from "./routes/messages.route";
+import userRouter from "./routes/users.route";
+
 import dotnev from "dotenv";
 import cors from "cors";
 import { createClient } from "redis";
@@ -9,8 +13,6 @@ import { OAuth2Client } from "google-auth-library";
 import cookieParser from "cookie-parser";
 import * as Sentry from "@sentry/node";
 import { functionErrorHandler } from "./handlers/FunctionalErrorHandler";
-import prisma from "../prisma/prisma";
-import { getUserDetails } from "./controllers/auth.controller";
 dotnev.config();
 
 const app: Express = express();
@@ -27,15 +29,11 @@ export const oAuth2Client = new OAuth2Client(
   process.env.CLIENT_SECRET,
   "postmessage"
 );
-oAuth2Client.on("tokens", async (tokens) => {
-  if (tokens.refresh_token) {
-    const user = await getUserDetails(tokens.id_token as string);
-    const updatedUser = await prisma.user.update({
-      where: { email: user?.email },
-      data: { refreshToken: tokens.refresh_token, isGoogleAuthenticated: true },
-    });
-  }
-});
+// oAuth2Client.on("tokens", async (tokens) => {
+//   if (tokens.refresh_token) {
+
+//   }
+// });
 
 const port = process.env.PORT;
 
@@ -57,12 +55,14 @@ redisClient.on("error", (err) => console.error("Redis Client Error", err));
 app.use(express.json());
 
 //routes
-app.use("/api/user", authRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/users", userRouter);
+app.use("/api/conversations", conversationRouter);
+app.use("/api/message", messageRouter);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (functionErrorHandler.isTrustedError(err)) {
     const statusCode = err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     return res.status(statusCode).json({
       success: false,
       statusCode,
@@ -70,6 +70,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     });
   }
   functionErrorHandler.handleError(err);
+  return res.status(500).json({ message: "Backend Error", errorMessage: err });
 });
 
 app.listen(8080, () =>

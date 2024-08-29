@@ -19,7 +19,7 @@ function DobForm() {
   const sendOtp = useApi({
     method: "POST",
     queryKey: ["sendOtp"],
-    url: "/user/otp",
+    url: "/auth/otp",
   })?.post;
   const handleSubmit = async () => {
     if (validAge) {
@@ -62,7 +62,6 @@ function DobForm() {
         </Text>
       </div>
       <Button
-        disabled={!validAge}
         type="button"
         style="login"
         className="!w-11/12 mx-auto !mb-3 "

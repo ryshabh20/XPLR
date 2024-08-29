@@ -2,24 +2,27 @@ import { Img } from "@/components/common/img";
 import Input from "@/components/common/input";
 import Button from "@/components/common/button";
 import Text from "../common/text";
-import { FieldValues, useForm } from "react-hook-form";
+import { ControllerRenderProps, FieldValues, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import useAuthStore, { UserSignUpState } from "@/store/authStore";
 import { SignUpSchema } from "../../../utils/ZodSchemas";
 import ErrorComponent from "../../../custom-ui/ErrorComponent";
 import { useState } from "react";
 import { useGoogleAuth } from "../../../utils/LogInWithGoogle";
+import { axiosInstance } from "../../../custom-hooks/useApi";
+import { useToast } from "../../../custom-hooks/useToast";
 export default function CreateAccountForm() {
   const { changeSignUpState, changeUserSignUpDataState } = useAuthStore(
     (state) => state
   );
   const { loginWithGoogle } = useGoogleAuth();
+  const { handleToast } = useToast();
   const [errorMessage, setErrorMessage] = useState("");
   const [valid, setValid] = useState({
     username: false,
     email: false,
   });
-  console.log("this is the valid state", valid);
+  const [loading, setLoading] = useState(false);
 
   const { handleSubmit, control, formState, getFieldState } = useForm({
     mode: "onChange",
@@ -36,6 +39,47 @@ export default function CreateAccountForm() {
     }
   };
   const isAnyFieldInvalid = Object.values(valid).some((el) => el === false);
+
+  const changeHandler =
+    (
+      field: ControllerRenderProps<FieldValues, string>,
+      checkWhat: string,
+      setIsTouched: React.Dispatch<React.SetStateAction<boolean>>
+    ) =>
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      try {
+        if (!e.target.value) {
+          field.onChange(e.target.value);
+          return;
+        }
+        const url = `users/status?${checkWhat}=${e.target.value}`;
+        setLoading(true);
+        const response = await axiosInstance.get(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/${url}`
+        );
+
+        if (response.data.exist) {
+          setIsTouched(true);
+          setValid({
+            ...valid,
+            [e.target.name]: false,
+          });
+        } else {
+          setIsTouched(true);
+
+          setValid({
+            ...valid,
+            [e.target.name]: true,
+          });
+        }
+        setLoading(false);
+
+        field.onChange(e.target.value);
+      } catch (error) {
+        console.log(error);
+        handleToast("Error Accessing the Database", "error");
+      }
+    };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="border p-5 space-y-5">
@@ -56,7 +100,7 @@ export default function CreateAccountForm() {
         </Text>
       </div>
       <Button
-        type="submit"
+        type="button"
         style="login"
         className="tracking-normal"
         onClick={loginWithGoogle}
@@ -84,8 +128,7 @@ export default function CreateAccountForm() {
           name="email"
           checkWhat="email"
           control={control}
-          stateVal={valid}
-          setterFn={setValid}
+          IsInputCorrect={valid.email}
           placeholder="Email or Phone Number"
           type="email"
           formState={formState}
@@ -93,6 +136,7 @@ export default function CreateAccountForm() {
           minLength={5}
           maxLength={45}
           getFieldState={getFieldState}
+          changeHandler={changeHandler}
         />
         <Input
           name="fullname"
@@ -104,13 +148,13 @@ export default function CreateAccountForm() {
         <Input
           name="username"
           control={control}
-          stateVal={valid}
-          setterFn={setValid}
+          IsInputCorrect={valid.username}
           checkWhat="username"
           time={500}
           placeholder="Username"
           getFieldState={getFieldState}
           formState={formState}
+          changeHandler={changeHandler}
         />
         <Input
           name="password"
@@ -123,7 +167,7 @@ export default function CreateAccountForm() {
         <Button
           type="submit"
           style="login"
-          disabled={!formState.isValid || isAnyFieldInvalid}
+          disabled={!formState.isValid || isAnyFieldInvalid || loading}
           className={`${
             (!formState.isValid && "bg-gray-300") ||
             (isAnyFieldInvalid && "bg-gray-300")
@@ -131,6 +175,7 @@ export default function CreateAccountForm() {
         >
           Sign Up
         </Button>
+
         <ErrorComponent message={errorMessage} />
       </div>
     </form>

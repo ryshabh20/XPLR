@@ -2,11 +2,13 @@
 import React, { useState } from "react";
 
 import { InputProps } from "../../../../lib/type";
-import { Controller } from "react-hook-form";
+import {
+  Controller,
+  ControllerRenderProps,
+  FieldValues,
+} from "react-hook-form";
 import useDebounce from "../../../../custom-hooks/useDebounce";
-import { useToast } from "../../../../custom-hooks/useToast";
 import { Img } from "../img";
-import axios from "axios";
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
@@ -21,85 +23,54 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       maxLength,
       minLength = 0,
       getFieldState,
-      stateVal,
-      setterFn,
+      inputClassName,
       time = 0,
+      IsInputCorrect,
       formState,
       suffix,
       isChange,
       control,
       regex,
       apiParams,
+      changeHandler = (field: ControllerRenderProps<FieldValues>) =>
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+          field.onChange(e.target.value);
+        },
       ...restProps
     },
     ref
   ) => {
-    const { handleToast } = useToast();
     const [isTouched, setIsTouched] = useState(false);
-
     return (
-      <div className={`${className} flex flex-col items-center text-black `}>
+      <div className={`${className} flex items-center flex-col text-black `}>
         {!!label && label}
         {!!prefix && prefix}
         <div className="relative w-full ">
           <Controller
             name={name}
             control={control}
-            render={({ field: { onChange, onBlur, ref } }) => {
-              const changeHandler = async (
-                e: React.ChangeEvent<HTMLInputElement>
-              ) => {
-                if (checkWhat) {
-                  try {
-                    const url = `user/check?${checkWhat}=${e.target.value}`;
-                    const response = await axios.get(
-                      `${process.env.NEXT_PUBLIC_BASE_URL}/${url}`
-                    );
-                    if (response.data.exist) {
-                      setIsTouched(true);
-                      if (setterFn) {
-                        setterFn({
-                          ...stateVal,
-                          [name]: false,
-                        });
-                      }
-                      // setValid(false);
-                    } else {
-                      setIsTouched(true);
-                      if (setterFn) {
-                        setterFn({
-                          ...stateVal,
-                          [name]: true,
-                        });
-                      }
-                      // setValid(true);
-                    }
-                    onChange(e.target.value);
-                  } catch (error) {
-                    console.log(error);
-                    handleToast("Error Accessing the Database", "error");
-                  }
-                } else {
-                  onChange(e.target.value);
-                }
-              };
-
+            render={({ field }) => {
               return (
                 <input
+                  name={name}
                   type={type}
-                  onChange={useDebounce(changeHandler, time)}
-                  onBlur={onBlur}
+                  onChange={useDebounce(
+                    changeHandler(field, checkWhat, setIsTouched),
+                    time
+                  )}
+                  onBlur={field.onBlur}
                   ref={ref}
                   minLength={minLength}
                   maxLength={maxLength}
-                  className={`w-full px-2 ${checkWhat && "pr-8"} py-1 rounded-sm border text-sm xl:text-base h-9 ${className} ${checkWhat && "relative outline-0"}`}
+                  className={`w-full px-2 ${checkWhat && "pr-8"} py-1 rounded-sm border text-sm xl:text-base h-9 ${inputClassName} ${checkWhat && "relative outline-0"}`}
                   placeholder={placeholder}
                   {...restProps}
                 />
               );
             }}
           />
-          {checkWhat && !stateVal[name] && isTouched && (
+
+          {checkWhat && !IsInputCorrect && isTouched && (
             <Img
               src="/check-cross.svg"
               height={20}
@@ -110,7 +81,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {!!suffix && suffix}
-        {formState.errors &&
+        {formState &&
+          formState.errors &&
           typeof formState.errors[name]?.message === "string" && (
             <span className="text-red-500 self-start text-sm xl:text-[15px] p-1">
               {formState.errors[name]?.message}

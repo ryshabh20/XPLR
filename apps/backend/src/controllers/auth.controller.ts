@@ -3,44 +3,8 @@ import prisma from "../../prisma/prisma";
 import { SendOtp } from "../../utils/send.otp";
 import { oAuth2Client, redisClient } from "..";
 import { errorHandler } from "../../utils/errorHandler";
-import { generateNewTokens } from "../../utils/tokens";
+import { decodeAccessToken, generateNewTokens } from "../../utils/tokens";
 import { HttpStatusCode } from "axios";
-
-const checkUserExistence = async (
-  identifier: string,
-  field: "email" | "username",
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { [field]: identifier } as { [K in typeof field]: string },
-    });
-    res.json({ exist: !!user });
-  } catch (error) {
-    next(error);
-  }
-};
-export const UserNameChecker = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const email = req.query.email as string;
-  const username = req.query.username as string;
-  if (!email && !username) {
-    errorHandler(
-      HttpStatusCode.BadRequest,
-      "please provide a valid username/email."
-    );
-  }
-  if (email) {
-    checkUserExistence(email, "email", res, next);
-  }
-  if (username) {
-    checkUserExistence(username, "username", res, next);
-  }
-};
 
 export const getUserDetails = async (idToken: string) => {
   const ticket = await oAuth2Client.verifyIdToken({
@@ -49,19 +13,19 @@ export const getUserDetails = async (idToken: string) => {
   });
 
   const payload = ticket.getPayload();
-  if (payload) {
-    return {
-      userId: payload.sub,
-      email: payload.email,
-      emailVerified: payload.email_verified,
-      name: payload.name,
-      givenName: payload.given_name,
-      familyName: payload.family_name,
-      picture: payload.picture,
-    };
+  if (!payload) {
+    errorHandler(HttpStatusCode.BadRequest, "Unable to retrieve user details");
+    return;
   }
-
-  errorHandler(HttpStatusCode.BadRequest, "Unable to retrieve user details");
+  return {
+    userId: payload.sub,
+    email: payload.email,
+    emailVerified: payload.email_verified,
+    name: payload.name,
+    givenName: payload.given_name,
+    familyName: payload.family_name,
+    picture: payload.picture,
+  };
 };
 
 export const signup = async (
@@ -102,36 +66,49 @@ export const GoogleLogin = async (
   next: NextFunction
 ) => {
   const { code } = req.body;
-
   const { tokens } = await oAuth2Client.getToken(code);
 
   if (!tokens) {
     errorHandler(HttpStatusCode.Unauthorized, "Please try to login again");
-  } else {
-    const user = await getUserDetails(tokens.id_token as string);
-    const dbUser = await prisma.user.findUnique({
-      where: {
-        email: user?.email,
-      },
-    });
-
-    if (user) {
-      await prisma.user.create({
-        data: {
-          email: user?.email || "",
-          fullname: user?.name || "",
-          username: user?.email || "",
-          refreshToken: tokens.refresh_token,
-        },
-      });
-    }
-    oAuth2Client.setCredentials(tokens);
-    res.cookie("access_token", tokens.access_token);
-    res.cookie("refresh_token", tokens.refresh_token);
-    return res.json({ user, tokens });
   }
+  const user = await getUserDetails(tokens.id_token as string);
+  if (!user) {
+    errorHandler(
+      HttpStatusCode.Unauthorized,
+      "Please check with your Provider or try to login again"
+    );
+  }
+
+  if (!user) {
+    errorHandler(
+      HttpStatusCode.Unauthorized,
+      "Please check with your Provider or try to login again"
+    );
+  }
+  await prisma.user.upsert({
+    where: {
+      email: user?.email,
+    },
+    update: {
+      fullname: user?.name || "",
+    },
+    create: {
+      email: user?.email || "",
+      fullname: user?.name || "",
+      username: user?.email || "",
+    },
+  });
+  oAuth2Client.setCredentials(tokens);
+  await generateNewTokens(user?.email as string, res);
+  return res.json({ user });
 };
 
+// export const refreshGoogleAccessToken = async (refresh_token: string) => {
+//   const credentials = oAuth2Client.setCredentials({
+//     refresh_token,
+//   });
+//   const refreshedAccessToken = await oAuth2Client.refreshAccessToken();
+// };
 export const OtpGenerator = async (
   req: Request,
   res: Response,
@@ -141,9 +118,10 @@ export const OtpGenerator = async (
   const { email } = data;
 
   try {
-    const [_, otpExpiration] = await redisClient.hmGet(email, [
+    const [_, otpExpiration, updatedAt] = await redisClient.hmGet(email, [
       "otp",
       "otp_expiration",
+      "updatedAt",
     ]);
     if (!otpExpiration) {
       const isOTPSent = await SendOtp({ email });
@@ -151,11 +129,11 @@ export const OtpGenerator = async (
         res.status(200).json({ message: "OTP sent successfully" });
       }
     }
-    const previousExpiredTime =
-      new Date(otpExpiration).getTime() - 9 * 60 * 1000;
+    const previousExpiredTime = new Date(updatedAt).getTime();
     const currentTime = Date.now();
     const elapsedTime = (currentTime - previousExpiredTime) / 1000;
-    if (elapsedTime < 60) {
+
+    if (elapsedTime < 1) {
       return res.status(HttpStatusCode.TooManyRequests).json({
         message: "Please wait 1 minute before sending out another OTP.",
       });
@@ -182,7 +160,6 @@ export const VerifyOtp = async (
       "otp",
       "otp_expiration",
     ]);
-
     if (!storedOtp || !otpExpiration) {
       await redisClient.del(data.email);
       errorHandler(403, "Please request a new OTP.");
@@ -203,6 +180,7 @@ export const VerifyOtp = async (
     const user = await prisma.user.create({
       data,
     });
+
     if (user) {
       res.status(200).json({
         message: "User Created Successfully",
@@ -232,17 +210,16 @@ export const Login = async (
   }
 };
 
-export const OauthGoogle = async (
+export const logout = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  // const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
-
-  // console.log("Full URL:", fullUrl);
-  console.log("called");
-  console.log("this is the req", req);
-  console.log("this is the request query", req.query);
-  console.log("this is the header", req.headers);
-  return res.json({ message: "success" });
+  try {
+    res.clearCookie("access_token");
+    res.clearCookie("refresh_token");
+    res.status(200).json("User has been logged out!");
+  } catch (error) {
+    next(error);
+  }
 };

@@ -3,7 +3,7 @@ import Text, { sizes } from "@/components/common/text";
 const ErrorComponent = ({
   message,
   className,
-  size = "sm",
+  size = "base",
   color = "text-red-400",
 }: {
   message: string;
