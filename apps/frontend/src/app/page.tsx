@@ -1,5 +1,4 @@
 "use client";
-import useApi from "../../custom-hooks/useApi";
 import IconSpinner from "../../custom-ui/IconSpinner";
 
 export default function Home() {

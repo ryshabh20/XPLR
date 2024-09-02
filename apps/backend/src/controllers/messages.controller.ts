@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import prisma from "../../prisma/prisma";
-import { isErrored } from "stream";
 import { errorHandler } from "../../utils/errorHandler";
 import { HttpStatusCode } from "axios";
 
@@ -27,9 +26,15 @@ export const SendMessage = async (
               id: senderId,
             },
           },
-          isRead: false,
+
+          latestMessage: {
+            connect: {
+              id: conversationId,
+            },
+          },
         },
       });
+
       return messageCreated;
     };
 
@@ -38,6 +43,7 @@ export const SendMessage = async (
       const createConversation = await prisma.conversation.create({
         data: {
           creatorId: senderId,
+
           participant: {
             create: participants.map((participant) => ({
               user: { connect: { id: participant } },
@@ -56,4 +62,31 @@ export const SendMessage = async (
     console.log(error);
     errorHandler(HttpStatusCode.BadRequest, "Couldn't send message try again");
   }
+};
+
+export const getAllMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  // const { conversationId } = req.body;
+  const { filterId } = req.query;
+  if (!filterId) {
+    return res.json({
+      Message: "All Messages fetched",
+      data: [],
+    });
+  }
+  const allMessages = await prisma.message.findMany({
+    where: {
+      conversationId: filterId as string,
+    },
+    include: {
+      latestMessage: true,
+    },
+  });
+  return res.json({
+    Message: "All Messages fetched",
+    data: allMessages,
+  });
 };

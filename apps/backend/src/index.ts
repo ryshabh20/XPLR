@@ -58,7 +58,7 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/conversations", conversationRouter);
-app.use("/api/message", messageRouter);
+app.use("/api/messages", messageRouter);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (functionErrorHandler.isTrustedError(err)) {
     const statusCode = err.statusCode || 500;

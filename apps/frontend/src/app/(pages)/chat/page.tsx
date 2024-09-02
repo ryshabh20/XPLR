@@ -11,7 +11,7 @@ export default function Page() {
   const { user } = useAuth();
   const chatState = useChatStore((state) => state.chatState);
   return (
-    <div className="h-full w-full flex">
+    <div className="h-full w-dvh flex">
       <FriendList />
       {chatState === 0 && <ChatConversations />}
       {chatState === 1 && <Chat />}

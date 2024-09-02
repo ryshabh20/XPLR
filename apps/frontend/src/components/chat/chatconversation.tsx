@@ -6,8 +6,9 @@ import NewConversationDialog from "./newconversationdialog";
 
 export const ChatConversations = () => {
   const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="w-full h-full flex justify-center items-center flex-col gap-2 flex-shrink ">
+    <div className="w-full h-dvh flex justify-center items-center flex-col gap-2 flex-shrink ">
       <Img
         alt="Send Message"
         src="/send_message.svg"

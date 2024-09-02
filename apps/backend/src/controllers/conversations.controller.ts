@@ -82,16 +82,39 @@ export const getAllConversations = async (
   next: NextFunction
 ) => {
   const creatorId = req.user?.id;
-  const allConversations = await prisma.user.findUnique({
+
+  const allConversations = await prisma.conversation.findMany({
     where: {
-      id: creatorId,
-    },
-    include: {
-      conversation: {
-        include: {
-          conversation: true,
+      participant: {
+        some: {
+          userId: creatorId,
         },
       },
     },
+
+    include: {
+      latestMessage: {
+        select: {
+          content: true,
+          sender: {
+            select: {
+              avatar: true,
+            },
+          },
+        },
+      },
+      participant: {
+        where: { NOT: { userId: creatorId } },
+        select: {
+          user: { select: { fullname: true, id: true, username: true } },
+        },
+      },
+    },
+  });
+
+  const conversations = !!allConversations?.length ? allConversations : [];
+  return res.json({
+    message: "All conversations Fetched",
+    data: allConversations,
   });
 };

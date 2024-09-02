@@ -11,13 +11,13 @@ export const MessageInput = () => {
   const sendMessage = useApi({
     method: "POST",
     queryKey: ["sendMessage"],
-    url: "/message/send",
+    url: "/messages/send",
   })?.post;
   const messageHandler = async (data: FieldValues) => {
     const newMessage = await sendMessage?.mutateAsync({
       recipientId: chatStore.id,
       messageBody: data.message,
-      conversationId: null,
+      conversationId: chatStore.conversationId,
     });
   };
   return (
@@ -30,7 +30,7 @@ export const MessageInput = () => {
         suffix={
           <Button
             type={"button"}
-            className="bg-transparent p-0 max-w-fit mt-0 flex items-center h-full"
+            className="bg-transparent p-0 max-w-fit !mt-0 flex items-center h-full"
           >
             {" "}
             <Text size="smsemibold" className="text-blue-400">

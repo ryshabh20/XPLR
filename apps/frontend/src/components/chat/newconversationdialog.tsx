@@ -76,7 +76,9 @@ export default function NewConversationDialog({
         avatar: filteredUser?.avatar || "/profile.svg",
         id: filteredUser?.id || "",
         username: filteredUser?.username || "",
+        conversationId: result?.data?.data?.id || "",
       });
+      setIsOpen(false);
     } catch (error) {
       console.log(error);
       handleToast("Error Accessing the Database", "error");

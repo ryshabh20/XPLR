@@ -4,8 +4,9 @@ import { SearchUserLoader } from "../../../custom-loaders/search-user-loader";
 import { Img } from "../common/img";
 import Text from "../common/text";
 import ChatNotes from "./chatnotes";
-import Messages from "./messages";
+
 import NewConversationDialog from "./newconversationdialog";
+import AllConversations from "./AllConversations";
 
 export default function FriendList() {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ export default function FriendList() {
         </div>
         <NewConversationDialog isOpen={isOpen} setIsOpen={setIsOpen} />
         <ChatNotes />
-        <Messages />
+        <AllConversations />
       </div>
     </div>
   );

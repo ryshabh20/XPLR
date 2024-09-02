@@ -31,18 +31,18 @@ model user {
 }
 
 model message {
-  id             String        @id @default(uuid())
-  sender         user          @relation(fields: [senderId], references: [id])
-  senderId       String
-  content        String?
-  mediaUrl       String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  isRead         Boolean
-  conversation   conversation  @relation(fields: [conversationId], references: [id])
-  conversationId String
-  latestMessage  conversation? @relation("LatestMessage", fields: [latestId], references: [id])
-  latestId       String?       @unique
+  id        String   @id @default(uuid())
+  sender    user     @relation(fields: [senderId], references: [id])
+  senderId  String
+  content   String?
+  mediaUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversation    conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId  String
+  latestMessage   conversation? @relation("LatestMessage", fields: [latestMessageId], references: [id], onDelete: Cascade)
+  latestMessageId String?       @unique
 }
 
 model conversation {
@@ -58,11 +58,12 @@ model conversation {
 }
 
 model participant {
-  conversation   conversation @relation(fields: [conversationId], references: [id])
-  joinedAt       DateTime     @default(now())
-  conversationId String
-  user           user         @relation(fields: [userId], references: [id])
-  userId         String
+  conversation        conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  joinedAt            DateTime     @default(now())
+  conversationId      String
+  user                user         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  isReadByParticipant Boolean      @default(false)
 
   @@id([conversationId, userId])
 }

@@ -70,3 +70,30 @@ type UserFromBackend = {
   isGoogleAuthenticated?: boolean;
   avatar?: string;
 };
+
+type Participant = {
+  joinedAt: Date;
+  conversationId: string;
+  userId: string;
+  isReadByParticipant: boolean;
+};
+
+type Conversation = {
+  id: string;
+  creatorId: string;
+  isGroup: boolean;
+  title?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Messages = {
+  id: string;
+  senderId: string;
+  content?: string;
+  mediaUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  conversationId: string;
+  latestMessageId?: string;
+};

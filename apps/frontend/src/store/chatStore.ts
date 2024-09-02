@@ -6,6 +6,7 @@ type newChatState = {
   fullname: string;
   id: string;
   username: string;
+  conversationId: string;
 };
 
 type State = {
@@ -23,6 +24,7 @@ const InitialState: State = {
     fullname: "",
     id: "",
     username: "",
+    conversationId: "",
   },
 };
 const useChatStore = create<State & Actions>((set) => ({
