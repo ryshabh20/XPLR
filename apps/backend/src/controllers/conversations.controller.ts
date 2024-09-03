@@ -110,6 +110,11 @@ export const getAllConversations = async (
         },
       },
     },
+    orderBy: {
+      latestMessage: {
+        createdAt: "desc",
+      },
+    },
   });
 
   const conversations = !!allConversations?.length ? allConversations : [];

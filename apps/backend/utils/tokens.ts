@@ -66,7 +66,6 @@ export const generateNewAccessToken = async (
   refreshTokenFromRequest: string,
   res: Response
 ) => {
-  console.log("is it here");
   const user = await prisma.user.findUnique({
     where: { id },
     select: { id: true, refreshToken: true },

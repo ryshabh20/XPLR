@@ -31,7 +31,7 @@ export default function ConversationUserCard({
   };
   return (
     <div
-      className="flex space-x-4 justify-self-center w-full  hover:cursor-pointer hover:bg-neutral-700 py-4 "
+      className="flex space-x-4 px-6 justify-self-center w-full  hover:cursor-pointer hover:bg-neutral-700 py-4 "
       onClick={handleClick}
     >
       <Img

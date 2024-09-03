@@ -2,16 +2,20 @@ import useChatStore from "@/store/chatStore";
 import { Img } from "../common/img";
 import Text from "../common/text";
 import { MessageInput } from "./MessageInput";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useApi from "../../../custom-hooks/useApi";
 import { useToast } from "../../../custom-hooks/useToast";
 import { Messages } from "../../../lib/type";
 import { useAuth } from "../../../custom-hooks/useAuth";
 import { Message } from "./message";
+import { socket } from "../../../socket";
+import { useQueryClient } from "@tanstack/react-query";
 const Chat = () => {
   const newChatState = useChatStore((state) => state.newChatState);
-  const [messages, setMessages] = useState();
+  const [messages, setMessages] = useState<Messages[]>([]);
   const { user } = useAuth();
+  const latestMessage = useRef<HTMLDivElement | null>(null);
+
   const chatState = useChatStore((state) => state.newChatState);
   const { handleToast } = useToast();
   const getAllConversations = useApi({
@@ -19,6 +23,23 @@ const Chat = () => {
     url: `/messages?filterId=${newChatState.conversationId}`,
     queryKey: ["gettAllMessages"],
   })?.get;
+
+  const client = useQueryClient();
+  socket.on("chat_message", async (data: Messages) => {
+    await client.invalidateQueries({ queryKey: ["getConversations"] });
+    setMessages([
+      ...messages,
+      {
+        id: data.id,
+        latestMessageId: data.latestMessageId,
+        conversationId: data.conversationId,
+        senderId: data?.senderId,
+        content: data?.content,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      },
+    ]);
+  });
   const refetchChatHandler = async () => {
     try {
       const result = await getAllConversations?.refetch();
@@ -27,6 +48,11 @@ const Chat = () => {
       handleToast("Error while fetching messages", "error");
     }
   };
+  useEffect(() => {
+    if (latestMessage.current) {
+      latestMessage.current?.scrollIntoView({ behavior: "instant" });
+    }
+  }, [messages]);
   useEffect(() => {
     const fetch = async () => {
       await refetchChatHandler();
@@ -57,13 +83,14 @@ const Chat = () => {
           </Text>
         </div>
       </div>
-      <div className="  overflow-y-auto w-full h-max flex  flex-col flex-1 items-end">
+      <div className="  overflow-y-auto w-full h-max flex  flex-col flex-1 justify-end">
         <div className="h-max w-full overflow-y-auto">
           <div className="h-full w-full flex flex-col justify-end">
             <div className="w-full h-auto overflow-y-auto">
-              {getAllConversations?.data?.data?.map((message: Messages) => {
+              {messages?.map((message: Messages) => {
                 return (
                   <Message
+                    ref={message.latestMessageId ? latestMessage : null}
                     isUserDifferent={user?.id !== message.senderId}
                     message={message?.content}
                   />

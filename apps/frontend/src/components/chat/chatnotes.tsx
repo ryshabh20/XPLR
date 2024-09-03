@@ -5,7 +5,7 @@ import Text from "../common/text";
 export default function ChatNotes() {
   const { user } = useAuth();
   return (
-    <div className="h-32 mt-12 hidden mobile:block ">
+    <div className="h-32 mt-12 hidden mobile:block px-6">
       <Img
         src={user?.avatar ? user?.avatar : "/profile.svg"}
         width={60}

@@ -13,9 +13,13 @@ import { OAuth2Client } from "google-auth-library";
 import cookieParser from "cookie-parser";
 import * as Sentry from "@sentry/node";
 import { functionErrorHandler } from "./handlers/FunctionalErrorHandler";
+import { Server } from "socket.io";
+import { createServer } from "http";
+import { MessageCreator } from "./controllers/messages.controller";
 dotnev.config();
 
 const app: Express = express();
+
 Sentry.setupExpressErrorHandler(app);
 app.use(
   cors({
@@ -73,6 +77,21 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   return res.status(500).json({ message: "Backend Error", errorMessage: err });
 });
 
-app.listen(8080, () =>
+const server = app.listen(8080, () =>
   console.log(`[server]:Server is running at http://localhost:${port}`)
 );
+const io = new Server(server, {
+  cors: {
+    origin:
+      // process.env["NODE_ENV"] === "developement"
+      "http://localhost:3000",
+    //       : config.APP_URL,
+  },
+});
+
+io.on("connection", (socket) => {
+  socket.on("chat_message", async (data) => {
+    const message = await MessageCreator(data);
+    io.emit("chat_message", message);
+  });
+});

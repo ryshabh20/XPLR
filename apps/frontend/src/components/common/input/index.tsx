@@ -52,6 +52,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             render={({ field }) => {
               return (
                 <input
+                  key={name}
                   name={name}
                   type={type}
                   onChange={useDebounce(

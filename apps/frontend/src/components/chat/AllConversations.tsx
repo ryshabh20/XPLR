@@ -1,5 +1,4 @@
 import useApi from "../../../custom-hooks/useApi";
-import { Messages, UserFromBackend } from "../../../lib/type";
 import Text from "../common/text";
 import ConversationUserCard from "./conversationusercard";
 
@@ -39,8 +38,8 @@ export default function AllConversations() {
   })?.get;
 
   return (
-    <div className="w-full flex flex-col flex-1">
-      <div className="w-full justify-between  hidden mobile:flex">
+    <div className="w-full flex flex-col flex-1 ">
+      <div className="w-full justify-between  hidden mobile:flex px-6 mb-2">
         <Text size="basesemibold" className="text-white">
           Messages
         </Text>

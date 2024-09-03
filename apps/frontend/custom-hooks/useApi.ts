@@ -1,12 +1,13 @@
 import {
   QueryClient,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   UseQueryOptions,
 } from "@tanstack/react-query";
 import axios, { AxiosRequestConfig } from "axios";
 const queryClient = new QueryClient();
-type Method = "GET" | "POST" | "PUT" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "DELETE" | "Infinite";
 export type apiParamsType = {
   method: Method;
   queryKey: Array<string>;
@@ -93,5 +94,14 @@ export default function useApi({
         },
       });
       return { post };
+    case "Infinite":
+      const inifinite = useInfiniteQuery({
+        queryKey,
+        queryFn: ({ pageParam }) => api(`${url}&cursor=${pageParam}`, "GET"),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+        getPreviousPageParam: (firstPage) => firstPage.nextCursor,
+      });
+      return { inifinite };
   }
 }

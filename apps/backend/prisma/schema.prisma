@@ -15,7 +15,7 @@ datasource db {
 }
 
 model user {
-  id                    String        @id @default(uuid())
+  id                    String        @id @default(cuid())
   username              String        @unique @db.VarChar(45)
   fullname              String        @db.VarChar(20)
   email                 String        @unique @db.VarChar(45)
@@ -31,7 +31,7 @@ model user {
 }
 
 model message {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   sender    user     @relation(fields: [senderId], references: [id])
   senderId  String
   content   String?
@@ -46,7 +46,7 @@ model message {
 }
 
 model conversation {
-  id            String        @id @default(uuid())
+  id            String        @id @default(cuid())
   creatorId     String
   isGroup       Boolean       @default(false)
   title         String?

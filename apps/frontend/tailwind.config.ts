@@ -8,6 +8,7 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     "./custom-ui/**/*.{js,ts,jsx,tsx,mdx}",
     "./custom-loaders/**/*.{js,ts,jsx,tsx,mdx}",
+    "./styles/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
