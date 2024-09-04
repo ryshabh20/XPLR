@@ -54,7 +54,12 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-const api = async (url: string, method: Method, obj = {}, config = {}) => {
+export const api = async (
+  url: string,
+  method: Method,
+  obj = {},
+  config = {}
+) => {
   switch (method) {
     case "GET": {
       return await axiosInstance.get(`${url}`).then((res) => res.data);
@@ -97,10 +102,10 @@ export default function useApi({
     case "Infinite":
       const inifinite = useInfiniteQuery({
         queryKey,
-        queryFn: ({ pageParam }) => api(`${url}&cursor=${pageParam}`, "GET"),
+        queryFn: ({ pageParam = 0 }) =>
+          api(`${url}&cursor=${pageParam}`, "GET"),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => lastPage.nextCursor,
-        getPreviousPageParam: (firstPage) => firstPage.nextCursor,
+        getNextPageParam: (lastPage) => lastPage.nextCursor || 0,
       });
       return { inifinite };
   }

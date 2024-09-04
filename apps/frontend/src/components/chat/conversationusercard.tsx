@@ -16,7 +16,7 @@ export default function ConversationUserCard({
   username: string;
   id: string;
 }) {
-  const { changeChatState, changeNewChatState } = useChatStore(
+  const { changeChatState, changeNewChatState, newChatState } = useChatStore(
     (state) => state
   );
   const handleClick = () => {
@@ -31,7 +31,7 @@ export default function ConversationUserCard({
   };
   return (
     <div
-      className="flex space-x-4 px-6 justify-self-center w-full  hover:cursor-pointer hover:bg-neutral-700 py-4 "
+      className={`flex space-x-4 px-6 justify-self-center w-full  hover:cursor-pointer ${newChatState.conversationId !== conversationId && "hover:bg-neutral-700  "}  py-4  ${newChatState.conversationId === conversationId && "bg-blue-500  "}`}
       onClick={handleClick}
     >
       <Img
@@ -48,7 +48,7 @@ export default function ConversationUserCard({
         </Text>
         <Text
           size="base"
-          className={`h-5 truncate rounded-sm  text-neutral-500`}
+          className={`h-5 truncate rounded-sm  text-neutral-500 ${newChatState.conversationId === conversationId && "text-white"}`}
         >
           {latestMessage}
         </Text>

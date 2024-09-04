@@ -1,3 +1,4 @@
+import useChatStore from "@/store/chatStore";
 import useApi from "../../../custom-hooks/useApi";
 import Text from "../common/text";
 import ConversationUserCard from "./conversationusercard";
@@ -50,6 +51,7 @@ export default function AllConversations() {
       {!!getConversations?.data?.data.length ? (
         getConversations?.data?.data.map((conversation: Conversation) => (
           <ConversationUserCard
+            key={conversation.id}
             avatar={conversation?.latestMessage?.sender?.avatar}
             fullname={conversation?.participant[0].user?.fullname}
             conversationId={conversation?.id}

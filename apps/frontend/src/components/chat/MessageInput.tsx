@@ -6,10 +6,11 @@ import Button from "../common/button";
 import useChatStore from "@/store/chatStore";
 import { socket } from "../../../socket";
 import { useAuth } from "../../../custom-hooks/useAuth";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 export const MessageInput = () => {
-  const { control, handleSubmit, watch, reset } = useForm({});
+  const [test, setTest] = useState([1, 2, 3, 4]);
+  const { control, handleSubmit, reset } = useForm({});
   const chatStore = useChatStore((state) => state.newChatState);
   const inputMessage = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
@@ -26,7 +27,6 @@ export const MessageInput = () => {
       inputMessage.current.value = "";
     }
   };
-
   return (
     <form className="w-full px-4" onSubmit={handleSubmit(messageHandler)}>
       <Input

@@ -69,15 +69,22 @@ export const getAllMessages = async (
   res: Response,
   next: NextFunction
 ) => {
-  // const { conversationId } = req.body;
   const { filterId } = req.query;
+  const cursor = req.query.cursor;
+
+  const pageSize = parseInt(req.query.pageSize as string) || 20;
+
   if (!filterId) {
     return res.json({
-      Message: "All Messages fetched",
+      message: "All Messages fetched",
       data: [],
     });
   }
+
   const allMessages = await prisma.message.findMany({
+    skip: cursor !== "0" ? 1 : 0,
+    cursor: cursor !== "0" ? { id: cursor as string } : undefined,
+    take: 20,
     where: {
       conversationId: filterId as string,
     },
@@ -85,12 +92,26 @@ export const getAllMessages = async (
       latestMessage: true,
     },
     orderBy: {
-      updatedAt: "asc",
+      id: "desc",
     },
   });
+
+  const nextCursor =
+    allMessages.length === pageSize
+      ? allMessages[allMessages.length - 1].id
+      : null;
+
+  const nextPage = await prisma.message.findMany({
+    where: {
+      conversationId: filterId as string,
+    },
+  });
+
   return res.json({
-    Message: "All Messages fetched",
+    message: "All Messages fetched",
     data: allMessages,
+    nextCursor,
+    hasNextPage: nextPage.length - allMessages.length > 0,
   });
 };
 
