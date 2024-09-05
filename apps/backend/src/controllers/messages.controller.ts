@@ -92,26 +92,27 @@ export const getAllMessages = async (
       latestMessage: true,
     },
     orderBy: {
-      id: "desc",
+      createdAt: "desc",
     },
   });
+
+  console.log(
+    allMessages.length - 1,
+
+    allMessages[allMessages.length - 1]?.id,
+
+    allMessages[allMessages.length - 1]?.id
+  );
 
   const nextCursor =
     allMessages.length === pageSize
-      ? allMessages[allMessages.length - 1].id
+      ? allMessages[allMessages.length - 1]?.id
       : null;
-
-  const nextPage = await prisma.message.findMany({
-    where: {
-      conversationId: filterId as string,
-    },
-  });
 
   return res.json({
     message: "All Messages fetched",
     data: allMessages,
     nextCursor,
-    hasNextPage: nextPage.length - allMessages.length > 0,
   });
 };
 
@@ -127,7 +128,6 @@ export const MessageCreator = async ({
   recipientId: string;
 }) => {
   try {
-    console.log(messageBody, conversationId, senderId, recipientId);
     const createNewMessage = async (conversationId: string) => {
       const messageCreated = await prisma.message.create({
         data: {

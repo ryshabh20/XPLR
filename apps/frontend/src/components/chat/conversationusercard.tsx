@@ -1,6 +1,7 @@
 import useChatStore from "@/store/chatStore";
 import { Img } from "../common/img";
 import Text from "../common/text";
+import { useQueryClient } from "@tanstack/react-query";
 export default function ConversationUserCard({
   fullname,
   latestMessage,
@@ -19,7 +20,12 @@ export default function ConversationUserCard({
   const { changeChatState, changeNewChatState, newChatState } = useChatStore(
     (state) => state
   );
+
+  const queryClient = useQueryClient();
   const handleClick = () => {
+    queryClient.invalidateQueries({
+      queryKey: [`getMessages${conversationId}`],
+    });
     changeChatState(1);
     changeNewChatState({
       fullname: fullname || "",

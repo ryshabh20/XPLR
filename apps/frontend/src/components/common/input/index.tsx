@@ -19,7 +19,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       type = "text",
       label = "",
       checkWhat = "",
-      prefix,
+      prefixIcon,
       maxLength,
       minLength = 0,
       getFieldState,
@@ -44,7 +44,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={`${className} flex items-center flex-col text-black `}>
         {!!label && label}
-        {!!prefix && prefix}
+        {!!prefixIcon && prefixIcon}
         <div className="relative w-full ">
           <Controller
             name={name}

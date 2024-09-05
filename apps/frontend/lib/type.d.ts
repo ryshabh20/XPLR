@@ -33,7 +33,7 @@ type InputProps = Omit<
     placeholder: string;
     checkWhat: string;
     label: string;
-    prefix: React.ReactNode;
+    prefixIcon: React.ReactNode;
     IsInputCorrect: boolean;
     suffix: React.ReactNode;
     isChange: (v: any) => void;

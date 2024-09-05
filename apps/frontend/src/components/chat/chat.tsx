@@ -3,16 +3,21 @@ import { Img } from "../common/img";
 import Text from "../common/text";
 import { MessageInput } from "./MessageInput";
 import { useEffect, useRef, useState } from "react";
-import useApi, { api } from "../../../custom-hooks/useApi";
+import { api } from "../../../custom-hooks/useApi";
 import { useToast } from "../../../custom-hooks/useToast";
 import { Messages } from "../../../lib/type";
 import { useAuth } from "../../../custom-hooks/useAuth";
-import { Message } from "./message";
 import { socket } from "../../../socket";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { Message } from "./message";
+import isLastWeek from "../../../utils/isLastWeek";
+import { groupEnd } from "console";
 const Chat = () => {
   const newChatState = useChatStore((state) => state.newChatState);
   const [messages, setMessages] = useState<Messages[]>([]);
+  const [groupedEntries, setGroupedEntries] = useState<
+    Partial<Record<string, Messages[]>>
+  >({});
   const { user } = useAuth();
   const latestMessage = useRef<HTMLDivElement | null>(null);
   const topMessageBoxRef = useRef<HTMLDivElement | null>(null);
@@ -20,7 +25,11 @@ const Chat = () => {
 
   const { handleToast } = useToast();
 
-  const getAllMessages = useInfiniteQuery({
+  const getAllMessages = useInfiniteQuery<{
+    data: Messages[];
+    hasNextPage: boolean;
+    nextCursor: string;
+  }>({
     queryKey: [`getMessages${newChatState.conversationId}`],
     queryFn: ({ pageParam = 0 }) =>
       api(
@@ -31,29 +40,56 @@ const Chat = () => {
     initialPageParam: 0,
 
     getNextPageParam: (lastPage) => {
-      if (!lastPage.hasNextPage) {
-        return undefined;
-      }
       return lastPage.nextCursor;
     },
   });
   const client = useQueryClient();
+  const dateOptions = (date: Date) => {
+    const options = isLastWeek(date)
+      ? { year: "numeric", month: "short", day: "numeric" }
+      : { month: "short", day: "numeric" };
+    return options;
+  };
 
   useEffect(() => {
     socket.on("chat_message", async (data: Messages) => {
+      const options = dateOptions(data.createdAt);
+      const filterKey = new Date(data.createdAt).toLocaleDateString(
+        undefined,
+        options as any
+      );
       await client.invalidateQueries({ queryKey: ["getConversations"] });
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: data.id,
-          latestMessageId: data.latestMessageId,
-          conversationId: data.conversationId,
-          senderId: data?.senderId,
-          content: data?.content,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-        },
-      ]);
+      setGroupedEntries((prevMessages) => {
+        const updatedMessages = {
+          ...prevMessages,
+          [filterKey]: prevMessages[filterKey]
+            ? [
+                ...prevMessages[filterKey],
+                {
+                  id: data.id,
+                  latestMessageId: data.latestMessageId,
+                  conversationId: data.conversationId,
+                  senderId: data?.senderId,
+                  content: data?.content,
+                  createdAt: data.createdAt,
+                  updatedAt: data.updatedAt,
+                },
+              ]
+            : [
+                {
+                  id: data.id,
+                  latestMessageId: data.latestMessageId,
+                  conversationId: data.conversationId,
+                  senderId: data?.senderId,
+                  content: data?.content,
+                  createdAt: data.createdAt,
+                  updatedAt: data.updatedAt,
+                },
+              ],
+        };
+        console.log("this is the updatedMessages", updatedMessages);
+        return updatedMessages;
+      });
     });
 
     return () => {
@@ -64,14 +100,27 @@ const Chat = () => {
   const refetchChatHandler = async () => {
     try {
       const result = await getAllMessages?.fetchNextPage();
-      const messages: any = [];
+      const messages: Array<Messages> = [];
 
       result.data?.pages.map((page) =>
-        page.data.map((message: any) => messages.push(message))
+        page.data?.map((message: Messages) => messages.push(message))
       );
+      const FlatReversedMessages = messages.flat().toReversed();
 
-      setMessages(messages.flat().toReversed());
+      const groupedBy = Object.groupBy(
+        FlatReversedMessages,
+        ({ createdAt }) => {
+          const options = dateOptions(createdAt);
+          return new Date(createdAt).toLocaleDateString(
+            undefined,
+            options as any
+          );
+        }
+      );
+      setGroupedEntries(groupedBy);
+      setMessages(FlatReversedMessages);
     } catch (error) {
+      console.log(error);
       handleToast("Error while fetching messages", "error");
     }
   };
@@ -95,14 +144,39 @@ const Chat = () => {
         getAllMessages.hasNextPage
       ) {
         const previousScrollHeight = scrollHeight;
-
         const result = await getAllMessages.fetchNextPage();
+        const resultArray =
+          result?.data?.pages[pageParamsCounter]?.data?.toReversed();
+        const groupedBy =
+          resultArray &&
+          Object.groupBy(resultArray, ({ createdAt }) => {
+            const options = dateOptions(createdAt);
+            return new Date(createdAt).toLocaleDateString(
+              undefined,
+              options as any
+            );
+          });
 
         setPageParamsCounter((prev) => prev + 1);
-        setMessages([
-          ...result.data?.pages[pageParamsCounter]?.data?.toReversed(),
-          ...messages,
-        ]);
+
+        setGroupedEntries((prevEntries) => {
+          if (!groupedBy) return prevEntries;
+
+          const updatedEntries = { ...prevEntries };
+
+          Object.keys(groupedBy).forEach((filterKey) => {
+            if (updatedEntries[filterKey]) {
+              updatedEntries[filterKey] = [
+                ...groupedBy[filterKey]!,
+                ...updatedEntries[filterKey],
+              ];
+            } else {
+              updatedEntries[filterKey] = groupedBy[filterKey];
+            }
+          });
+
+          return updatedEntries;
+        });
 
         const newScrollHeight = currentTopMessageBoxRef.scrollHeight;
 
@@ -141,7 +215,7 @@ const Chat = () => {
         <Img src="/info.svg" alt="profile" height={25} width={25} />
       </div>
       <div
-        className={`w-full  justify-center items-center ${getAllMessages?.data?.pages[0].data.length !== 0 ? "hidden" : "flex"}`}
+        className={`w-full  justify-center items-center ${getAllMessages?.data?.pages[0]?.data?.length !== 0 ? "hidden" : "flex"}`}
       >
         <div className=" flex flex-col items-center  gap-1 py-10">
           <Img src={newChatState.avatar} alt="profile" height={90} width={90} />
@@ -160,7 +234,31 @@ const Chat = () => {
               className="w-full h-auto overflow-y-auto "
               ref={topMessageBoxRef}
             >
-              {messages?.map((message: Messages) => {
+              {Object.keys(groupedEntries)?.map((date) => {
+                return (
+                  <div className="w-full">
+                    <div className="flex justify-center">
+                      <Text
+                        size="basesemibold"
+                        className="text-neutral-500 w-full text-center py-3"
+                      >
+                        {date}
+                      </Text>
+                    </div>
+                    <div>
+                      {groupedEntries[date]?.map((message) => (
+                        <Message
+                          key={message.id}
+                          ref={message.latestMessageId ? latestMessage : null}
+                          isUserDifferent={user?.id !== message.senderId}
+                          message={message?.content}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {/* {messages?.map((message: Messages) => {
                 return (
                   <Message
                     key={message.id}
@@ -169,7 +267,7 @@ const Chat = () => {
                     message={message?.content}
                   />
                 );
-              })}
+              })} */}
             </div>
           </div>
         </div>
