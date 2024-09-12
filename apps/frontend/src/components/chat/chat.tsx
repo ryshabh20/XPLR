@@ -7,23 +7,62 @@ import { api } from "../../../custom-hooks/useApi";
 import { useToast } from "../../../custom-hooks/useToast";
 import { Messages } from "../../../lib/type";
 import { useAuth } from "../../../custom-hooks/useAuth";
-import { socket } from "../../../socket";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Message } from "./message";
 import isLastWeek from "../../../utils/isLastWeek";
-import { groupEnd } from "console";
+import { useSocket } from "../../../custom-hooks/useSocket";
+import { socket } from "../../../socket";
+import useInfiniteScroll from "../../../custom-hooks/useInfiniteScroll";
+
 const Chat = () => {
-  const newChatState = useChatStore((state) => state.newChatState);
-  const [messages, setMessages] = useState<Messages[]>([]);
+  const { changeNewChatState, newChatState } = useChatStore((state) => state);
+
+  const message = useSocket()?.messages;
   const [groupedEntries, setGroupedEntries] = useState<
     Partial<Record<string, Messages[]>>
   >({});
   const { user } = useAuth();
   const latestMessage = useRef<HTMLDivElement | null>(null);
-  const topMessageBoxRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [pageParamsCounter, setPageParamsCounter] = useState(1);
+  const [scrollState, setScrollState] = useState(false);
 
   const { handleToast } = useToast();
+
+  const updateData = (result: any) => {
+    const resultArray =
+      result?.data?.pages[pageParamsCounter]?.data?.toReversed();
+    const groupedBy =
+      resultArray &&
+      Object.groupBy(resultArray, ({ createdAt }) => {
+        const options = dateOptions(createdAt);
+        return new Date(createdAt).toLocaleDateString(
+          undefined,
+          options as any
+        );
+      });
+
+    setPageParamsCounter((prev) => prev + 1);
+
+    setGroupedEntries((prevEntries) => {
+      if (!groupedBy) return prevEntries;
+
+      const updatedEntries = { ...prevEntries };
+
+      Object.keys(groupedBy).forEach((filterKey) => {
+        if (updatedEntries[filterKey]) {
+          updatedEntries[filterKey] = [
+            ...groupedBy[filterKey]!,
+            ...updatedEntries[filterKey],
+          ];
+        } else {
+          updatedEntries[filterKey] = groupedBy[filterKey];
+        }
+      });
+
+      return updatedEntries;
+    });
+  };
 
   const getAllMessages = useInfiniteQuery<{
     data: Messages[];
@@ -43,7 +82,14 @@ const Chat = () => {
       return lastPage.nextCursor;
     },
   });
-  const client = useQueryClient();
+
+  useInfiniteScroll({
+    fetchNextPage: getAllMessages.fetchNextPage,
+    hasNextPage: getAllMessages.hasNextPage,
+    isFetchingNextPage: getAllMessages.isFetchingNextPage,
+    updateData,
+    scrollContainerRef,
+  });
   const dateOptions = (date: Date) => {
     const options = isLastWeek(date)
       ? { year: "numeric", month: "short", day: "numeric" }
@@ -52,13 +98,21 @@ const Chat = () => {
   };
 
   useEffect(() => {
-    socket.on("chat_message", async (data: Messages) => {
+    if (!message) return;
+    (async (data: Messages) => {
       const options = dateOptions(data.createdAt);
       const filterKey = new Date(data.createdAt).toLocaleDateString(
         undefined,
         options as any
       );
-      await client.invalidateQueries({ queryKey: ["getConversations"] });
+
+      if (!newChatState.conversationId) {
+        changeNewChatState({
+          ...newChatState,
+          conversationId: message.conversationId,
+        });
+      }
+      // await client.invalidateQueries({ queryKey: ["getConversations"] });
       setGroupedEntries((prevMessages) => {
         const updatedMessages = {
           ...prevMessages,
@@ -87,15 +141,11 @@ const Chat = () => {
                 },
               ],
         };
-        console.log("this is the updatedMessages", updatedMessages);
+
         return updatedMessages;
       });
-    });
-
-    return () => {
-      socket.off("chat_message");
-    };
-  }, []);
+    })(message);
+  }, [message]);
 
   const refetchChatHandler = async () => {
     try {
@@ -117,8 +167,8 @@ const Chat = () => {
           );
         }
       );
+      setScrollState(true);
       setGroupedEntries(groupedBy);
-      setMessages(FlatReversedMessages);
     } catch (error) {
       console.log(error);
       handleToast("Error while fetching messages", "error");
@@ -128,73 +178,7 @@ const Chat = () => {
     if (latestMessage.current) {
       latestMessage.current?.scrollIntoView({ behavior: "instant" });
     }
-  }, [messages]);
-
-  useEffect(() => {
-    const currentTopMessageBoxRef = topMessageBoxRef.current;
-
-    const handleScroll = async () => {
-      if (!currentTopMessageBoxRef) return;
-
-      const { scrollTop, scrollHeight } = currentTopMessageBoxRef;
-
-      if (
-        scrollTop < 200 &&
-        !getAllMessages.isFetchingNextPage &&
-        getAllMessages.hasNextPage
-      ) {
-        const previousScrollHeight = scrollHeight;
-        const result = await getAllMessages.fetchNextPage();
-        const resultArray =
-          result?.data?.pages[pageParamsCounter]?.data?.toReversed();
-        const groupedBy =
-          resultArray &&
-          Object.groupBy(resultArray, ({ createdAt }) => {
-            const options = dateOptions(createdAt);
-            return new Date(createdAt).toLocaleDateString(
-              undefined,
-              options as any
-            );
-          });
-
-        setPageParamsCounter((prev) => prev + 1);
-
-        setGroupedEntries((prevEntries) => {
-          if (!groupedBy) return prevEntries;
-
-          const updatedEntries = { ...prevEntries };
-
-          Object.keys(groupedBy).forEach((filterKey) => {
-            if (updatedEntries[filterKey]) {
-              updatedEntries[filterKey] = [
-                ...groupedBy[filterKey]!,
-                ...updatedEntries[filterKey],
-              ];
-            } else {
-              updatedEntries[filterKey] = groupedBy[filterKey];
-            }
-          });
-
-          return updatedEntries;
-        });
-
-        const newScrollHeight = currentTopMessageBoxRef.scrollHeight;
-
-        currentTopMessageBoxRef.scrollTop =
-          newScrollHeight - previousScrollHeight;
-      }
-    };
-
-    if (currentTopMessageBoxRef) {
-      currentTopMessageBoxRef.addEventListener("scroll", handleScroll);
-    }
-
-    return () => {
-      if (currentTopMessageBoxRef) {
-        currentTopMessageBoxRef.removeEventListener("scroll", handleScroll);
-      }
-    };
-  }, [getAllMessages]);
+  }, [message, scrollState]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -232,11 +216,11 @@ const Chat = () => {
           <div className="h-full w-full flex flex-col justify-end">
             <div
               className="w-full h-auto overflow-y-auto "
-              ref={topMessageBoxRef}
+              ref={scrollContainerRef}
             >
               {Object.keys(groupedEntries)?.map((date) => {
                 return (
-                  <div className="w-full">
+                  <div className="w-full" key={date}>
                     <div className="flex justify-center">
                       <Text
                         size="basesemibold"

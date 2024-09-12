@@ -1,33 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Img } from "../common/img";
 import clsx from "clsx";
 import Text from "../common/text";
+
+interface MessageUserCardProps {
+  fullname: string;
+  setRecipientUser: React.Dispatch<
+    React.SetStateAction<
+      {
+        username: string;
+        id: string;
+      }[]
+    >
+  >;
+  recipientUser: {
+    username: string;
+    id: string;
+  }[];
+  username: string;
+  avatar: string;
+  id: string;
+  inputSearchClear: () => void;
+}
 
 export default function MessageUserCard({
   fullname,
   username,
   avatar,
-  setRecipientUserId,
+  setRecipientUser,
+  recipientUser,
+  inputSearchClear,
   id,
-}: {
-  fullname: string;
-  setRecipientUserId: React.Dispatch<React.SetStateAction<string>>;
-  username: string;
-  avatar: string;
-  id: string;
-}) {
+}: MessageUserCardProps) {
   const [isChecked, setIsChecked] = useState<string>("");
   const handleClick = () => {
     if (isChecked === id) {
+      const removedIdFromRecipientUser = recipientUser.filter(
+        (user) => user.id !== isChecked
+      );
       setIsChecked("");
-      setRecipientUserId("");
+      setRecipientUser(removedIdFromRecipientUser);
       return;
     }
 
     setIsChecked(id);
-    setRecipientUserId(id);
+    setRecipientUser([...recipientUser, { username, id }]);
+    inputSearchClear();
   };
-
+  useEffect(() => {
+    if (recipientUser.findIndex((user) => user.id === id) !== -1) {
+      setIsChecked(id);
+    }
+  }, [id]);
   return (
     <div
       className="flex space-x-4 mb-4 px-5   hover:cursor-pointer hover:bg-neutral-700 py-4 "

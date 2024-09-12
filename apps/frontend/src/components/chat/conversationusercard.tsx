@@ -2,6 +2,16 @@ import useChatStore from "@/store/chatStore";
 import { Img } from "../common/img";
 import Text from "../common/text";
 import { useQueryClient } from "@tanstack/react-query";
+interface ConversationUserCardProps {
+  fullname: string;
+  conversationId: string;
+  latestMessage: string;
+  avatar: string;
+  username: string;
+  id: string;
+  isGroup: boolean;
+  groupAvatar: string[];
+}
 export default function ConversationUserCard({
   fullname,
   latestMessage,
@@ -9,14 +19,9 @@ export default function ConversationUserCard({
   conversationId,
   username,
   id,
-}: {
-  fullname: string;
-  conversationId: string;
-  latestMessage: string;
-  avatar: string;
-  username: string;
-  id: string;
-}) {
+  isGroup,
+  groupAvatar,
+}: ConversationUserCardProps) {
   const { changeChatState, changeNewChatState, newChatState } = useChatStore(
     (state) => state
   );
@@ -37,7 +42,7 @@ export default function ConversationUserCard({
   };
   return (
     <div
-      className={`flex space-x-4 px-6 justify-self-center w-full  hover:cursor-pointer ${newChatState.conversationId !== conversationId && "hover:bg-neutral-700  "}  py-4  ${newChatState.conversationId === conversationId && "bg-blue-500  "}`}
+      className={`flex space-x-4 px-6 justify-self-center w-full   h-[90px] hover:cursor-pointer  ${newChatState.conversationId !== conversationId && "hover:bg-neutral-800  "}  py-4  ${newChatState.conversationId === conversationId && "bg-neutral-700  "}`}
       onClick={handleClick}
     >
       <Img
@@ -45,16 +50,36 @@ export default function ConversationUserCard({
         alt="avatar"
         width={50}
         height={50}
-        className={`h-20 w-20 mobile:h-14 mobile:w-14 rounded-full self-center flex-1 `}
+        className={`h-20 w-20 mobile:h-14 mobile:w-14   rounded-full self-center flex-1 ${isGroup && "hidden"}`}
       />
+      {isGroup && (
+        <div className="relative  w-14 !ml-0 ">
+          <Img
+            src={groupAvatar[0] ? groupAvatar[0] : "/profile.svg"}
+            alt="participant1"
+            width={50}
+            height={50}
+            className={` rounded-full self-center flex-1 absolute`}
+          />
+          <Img
+            src={groupAvatar[0] ? groupAvatar[0] : "/profile.svg"}
+            alt="participant2"
+            width={50}
+            height={50}
+            className={` rounded-full self-center flex-1 absolute inset-x-2 top-3`}
+          />
+        </div>
+      )}
 
-      <div className="mobile:flex w-full truncate flex-col gap-1 hidden   ">
+      <div
+        className={`mobile:flex w-full justify-center truncate flex-col gap-1 hidden  ${isGroup && "!ml-0 pl-6"} `}
+      >
         <Text size="base" className={`h-5 rounded-sm text-white text-ellipsis`}>
           {fullname}
         </Text>
         <Text
           size="base"
-          className={`h-5 truncate rounded-sm  text-neutral-500 ${newChatState.conversationId === conversationId && "text-white"}`}
+          className={`h-6 truncate rounded-sm  text-neutral-500  `}
         >
           {latestMessage}
         </Text>

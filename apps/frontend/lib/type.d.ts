@@ -36,6 +36,7 @@ type InputProps = Omit<
     prefixIcon: React.ReactNode;
     IsInputCorrect: boolean;
     suffix: React.ReactNode;
+    innerDivClassName: string;
     isChange: (v: any) => void;
     reacthook: boolean;
     maxLength: number;
@@ -45,6 +46,7 @@ type InputProps = Omit<
     changeHandler: any;
     getFieldState: UseFormGetFieldState<FieldValues>;
     formState: FormState<FieldValues>;
+    inputContent: React.ReactNode;
   }> & {
     control: Control;
     // validationType: types;
@@ -85,6 +87,7 @@ type Conversation = {
   title?: string;
   createdAt: Date;
   updatedAt: Date;
+  avatar?: string;
 };
 
 type Messages = {

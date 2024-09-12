@@ -19,6 +19,7 @@
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.7.2",
     "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
     "jose": "^5.7.0",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
@@ -30,6 +31,7 @@
     "react-hot-toast": "^2.4.1",
     "sass": "^1.77.8",
     "socket.io-client": "^4.7.5",
+    "usehooks-ts": "^3.1.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.4"
   },

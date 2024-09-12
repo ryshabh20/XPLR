@@ -56,7 +56,6 @@ export const checkConversationExists = async (
 ) => {
   const creatorId = req.user?.id;
   const { recipientId } = req.body;
-
   const existingConversation = await prisma.participant.findFirst({
     where: {
       userId: creatorId,
@@ -68,6 +67,7 @@ export const checkConversationExists = async (
       },
     },
   });
+
   return res.status(HttpStatusCode.Ok).json({
     message: "Conversation exists",
     data: {
@@ -106,7 +106,9 @@ export const getAllConversations = async (
       participant: {
         where: { NOT: { userId: creatorId } },
         select: {
-          user: { select: { fullname: true, id: true, username: true } },
+          user: {
+            select: { fullname: true, id: true, username: true, avatar: true },
+          },
         },
       },
     },
@@ -122,4 +124,31 @@ export const getAllConversations = async (
     message: "All conversations Fetched",
     data: allConversations,
   });
+};
+
+export const CreateNewGroupConversations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { id } = req.user;
+  const { recipientIds } = req.body;
+
+  const participants = [...recipientIds, id];
+  await prisma.conversation.create({
+    data: {
+      isGroup: true,
+      creatorId: id,
+      participant: {
+        create: participants.map((participant) => ({
+          user: {
+            connect: {
+              id: participant,
+            },
+          },
+        })),
+      },
+    },
+  });
+  res.json({ message: "new group conversation created" });
 };

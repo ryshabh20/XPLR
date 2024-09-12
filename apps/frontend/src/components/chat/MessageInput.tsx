@@ -16,18 +16,14 @@ export const MessageInput = () => {
   const inputMessage = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const [openPicker, authResponse] = useDrivePicker();
-
   const messageHandler = async (data: FieldValues) => {
-    socket.emit("chat_message", {
+    socket.emit("private_chat_message", {
       recipientId: chatStore.id,
       messageBody: data.message,
       conversationId: chatStore.conversationId,
       senderId: user?.id,
     });
-    reset();
-    if (inputMessage.current) {
-      inputMessage.current.value = "";
-    }
+    reset({ message: "" });
   };
   const handleOpenPicker = () => {
     openPicker({

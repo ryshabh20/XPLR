@@ -8,6 +8,7 @@ export interface Conversation {
   creatorId: string;
   isGroup: boolean;
   title: null;
+  avatar?: string;
   createdAt: Date;
   updatedAt: Date;
   latestMessage: LatestMessage;
@@ -28,6 +29,7 @@ export interface Participant {
 
 export interface User {
   fullname: string;
+  avatar: string;
   id: string;
   username: string;
 }
@@ -52,12 +54,36 @@ export default function AllConversations() {
         getConversations?.data?.data.map((conversation: Conversation) => (
           <ConversationUserCard
             key={conversation.id}
-            avatar={conversation?.latestMessage?.sender?.avatar}
-            fullname={conversation?.participant[0].user?.fullname}
+            avatar={
+              conversation.isGroup
+                ? conversation?.avatar ||
+                  conversation?.latestMessage?.sender?.avatar
+                : conversation?.latestMessage?.sender?.avatar
+            }
+            groupAvatar={
+              conversation.isGroup && [
+                conversation.participant[conversation.participant.length - 1]
+                  .user.avatar,
+                conversation.participant[conversation.participant.length - 2]
+                  .user.avatar,
+              ]
+            }
+            fullname={
+              conversation.isGroup
+                ? conversation.participant
+                    .map((p) => p.user.fullname)
+                    .join(" , ")
+                : conversation?.participant[0].user?.fullname
+            }
             conversationId={conversation?.id}
-            latestMessage={conversation?.latestMessage?.content}
+            latestMessage={
+              conversation?.latestMessage?.content
+                ? conversation?.latestMessage?.content
+                : `You added ${conversation.participant[conversation.participant.length - 1].user.fullname} to the group.`
+            }
             username={conversation?.participant[0]?.user?.username}
             id={conversation?.participant[0]?.user?.username}
+            isGroup={conversation.isGroup}
           />
         ))
       ) : (

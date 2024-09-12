@@ -96,14 +96,6 @@ export const getAllMessages = async (
     },
   });
 
-  console.log(
-    allMessages.length - 1,
-
-    allMessages[allMessages.length - 1]?.id,
-
-    allMessages[allMessages.length - 1]?.id
-  );
-
   const nextCursor =
     allMessages.length === pageSize
       ? allMessages[allMessages.length - 1]?.id

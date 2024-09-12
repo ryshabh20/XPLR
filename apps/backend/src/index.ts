@@ -88,10 +88,40 @@ const io = new Server(server, {
     //       : config.APP_URL,
   },
 });
-
+const hashMap: Record<string, string> = {};
 io.on("connection", (socket) => {
-  socket.on("chat_message", async (data) => {
-    const message = await MessageCreator(data);
-    io.emit("chat_message", message);
-  });
+  // socket.on("join", (conversationId) => {
+  //   if (!(conversationId in hashMap)) {
+  //     console.log("Creating new conversation id", conversationId);
+  //     hashMap[conversationId] = socket.id;
+  //   } else {
+  //     console.log("Already Exist", conversationId);
+  //   }
+  // });
+
+  socket.on(
+    "private_chat_message",
+    async (data: {
+      messageBody: string;
+      conversationId: string;
+      senderId: string;
+      recipientId: string;
+    }) => {
+      // const recConversationId = hashMap[data.conversationId];
+
+      // console.log(
+      //   "recConversationId-=====<",
+      //   recConversationId,
+      //   "\n",
+      //   "this is conservationId",
+      //   data.conversationId
+      // );
+      console.log("chatData", data);
+      const message = await MessageCreator(data);
+      socket.broadcast.emit(data.conversationId, message);
+      socket.broadcast.emit("private_chat_message");
+      // io.to(data.conversationId).emit()
+      // socket.to(recConversationId).emit("private_chat_message", message);
+    }
+  );
 });

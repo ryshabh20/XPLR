@@ -6,6 +6,7 @@ import { ToastProvider } from "../../custom-hooks/useToast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider, useAuth } from "../../custom-hooks/useAuth";
 import { MainSideBar } from "../components/common/sidebar";
+// import { SocketProvider } from "../../custom-hooks/useSocket";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,7 +27,9 @@ export default function RootLayout({
           <GoogleOAuthProvider clientId="19202244146-puac5q9i2qquf8tj8b1qam2ha3teuukr.apps.googleusercontent.com">
             <AuthProvider>
               <ToastProvider>
+                {/* <SocketProvider> */}
                 <MainSideBar>{children}</MainSideBar>
+                {/* </SocketProvider> */}
               </ToastProvider>
             </AuthProvider>
           </GoogleOAuthProvider>

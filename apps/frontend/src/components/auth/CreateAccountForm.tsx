@@ -48,10 +48,6 @@ export default function CreateAccountForm() {
     ) =>
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       try {
-        if (!e.target.value) {
-          field.onChange(e.target.value);
-          return;
-        }
         const url = `users/status?${checkWhat}=${e.target.value}`;
         setLoading(true);
         const response = await axiosInstance.get(
@@ -73,13 +69,50 @@ export default function CreateAccountForm() {
           });
         }
         setLoading(false);
-
-        field.onChange(e.target.value);
       } catch (error) {
         console.log(error);
         handleToast("Error Accessing the Database", "error");
       }
     };
+
+  //   e: any,
+  //   field: ControllerRenderProps<FieldValues, string>,
+  //   checkWhat: string,
+  //   setIsTouched: React.Dispatch<React.SetStateAction<boolean>>
+  // ) => {
+  //   try {
+  //     if (!e.target.value) {
+  //       field.onChange(e.target.value);
+  //       return;
+  //     }
+  //     field.onChange(e.target.value);
+  //     const url = `users/status?${checkWhat}=${e.target.value}`;
+  //     setLoading(true);
+  //     const response = await axiosInstance.get(
+  //       `${process.env.NEXT_PUBLIC_BASE_URL}/${url}`
+  //     );
+
+  //     if (response.data.exist) {
+  //       setIsTouched(true);
+  //       setValid({
+  //         ...valid,
+  //         [e.target.name]: false,
+  //       });
+  //     } else {
+  //       setIsTouched(true);
+
+  //       setValid({
+  //         ...valid,
+  //         [e.target.name]: true,
+  //       });
+  //     }
+  //     setLoading(false);
+  //     console.log("here 1");
+  //   } catch (error) {
+  //     console.log(error);
+  //     handleToast("Error Accessing the Database", "error");
+  //   }
+  // };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="border p-5 space-y-5">

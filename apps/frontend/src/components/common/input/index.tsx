@@ -9,13 +9,15 @@ import {
 } from "react-hook-form";
 import useDebounce from "../../../../custom-hooks/useDebounce";
 import { Img } from "../img";
-
+import { useDebounceCallback } from "usehooks-ts";
+import { axiosInstance } from "../../../../custom-hooks/useApi";
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     {
       className = "",
       name = "",
       placeholder = "",
+      inputContent,
       type = "text",
       label = "",
       checkWhat = "",
@@ -26,6 +28,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       inputClassName,
       time = 0,
       IsInputCorrect,
+      innerDivClassName,
       formState,
       suffix,
       isChange,
@@ -41,11 +44,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     const [isTouched, setIsTouched] = useState(false);
+    const debounced = useDebounce(async (e, field) => {
+      changeHandler(field, checkWhat, setIsTouched)(e);
+    }, time);
     return (
       <div className={`${className} flex items-center flex-col text-black `}>
         {!!label && label}
         {!!prefixIcon && prefixIcon}
-        <div className="relative w-full ">
+        <div className={`relative w-full ${innerDivClassName}`}>
+          {inputContent && inputContent}
           <Controller
             name={name}
             control={control}
@@ -55,12 +62,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                   key={name}
                   name={name}
                   type={type}
-                  onChange={useDebounce(
-                    changeHandler(field, checkWhat, setIsTouched),
-                    time
-                  )}
+                  onChange={(e) => {
+                    field.onChange(e.target.value);
+
+                    debounced(e, field);
+                  }}
                   onBlur={field.onBlur}
                   ref={ref}
+                  value={field.value}
                   minLength={minLength}
                   maxLength={maxLength}
                   className={`w-full px-2 ${checkWhat && "pr-8"} py-1 rounded-sm border text-sm xl:text-base h-9 ${inputClassName} ${checkWhat && "relative outline-0"}`}
