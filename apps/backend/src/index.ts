@@ -39,7 +39,7 @@ export const oAuth2Client = new OAuth2Client(
 //   }
 // });
 
-const port = process.env.PORT;
+const port = process.env.PORT || 4000;
 
 export const redisClient = createClient({
   password: process.env.REDIS_PASSWORD,
@@ -77,7 +77,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   return res.status(500).json({ message: "Backend Error", errorMessage: err });
 });
 
-const server = app.listen(process.env.PORT, () =>
+const server = app.listen(port, () =>
   console.log(`[server]:Server is running at http://localhost`)
 );
 const io = new Server(server, {
