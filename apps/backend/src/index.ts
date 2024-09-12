@@ -77,14 +77,14 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   return res.status(500).json({ message: "Backend Error", errorMessage: err });
 });
 
-const server = app.listen(8080, () =>
-  console.log(`[server]:Server is running at http://localhost:${port}`)
+const server = app.listen(5000, () =>
+  console.log(`[server]:Server is running at http://localhost`)
 );
 const io = new Server(server, {
   cors: {
     origin:
       // process.env["NODE_ENV"] === "developement"
-      "http://localhost:3000",
+      "https://xplr-3c3e.onrender.com",
     //       : config.APP_URL,
   },
 });
