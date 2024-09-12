@@ -1,14 +1,25 @@
 import { NextFunction, Request, Response } from "express";
 import { verfiyToken } from "../../utils/tokens";
 import { access } from "fs";
-import { user } from "@prisma/client";
 import { errorHandler } from "../../utils/errorHandler";
 import { HttpStatusCode } from "axios";
 import { error } from "console";
 declare global {
   namespace Express {
     interface Request {
-      user: user;
+      user: {
+        id: string;
+        username: string;
+        fullname: string;
+        email: string;
+        password: string | null;
+        refreshToken: string | null;
+        isVerified: boolean | null;
+        avatar: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        isGoogleAuthenticated: boolean;
+      };
     }
   }
 }
