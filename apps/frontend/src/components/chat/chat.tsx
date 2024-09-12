@@ -30,7 +30,7 @@ const Chat = () => {
   const { handleToast } = useToast();
 
   const updateData = (result: any) => {
-    const resultArray =
+    const resultArray: Messages[] =
       result?.data?.pages[pageParamsCounter]?.data?.toReversed();
     const groupedBy =
       resultArray &&
