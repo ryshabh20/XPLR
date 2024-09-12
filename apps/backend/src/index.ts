@@ -11,7 +11,7 @@ import cors from "cors";
 import { createClient } from "redis";
 import { OAuth2Client } from "google-auth-library";
 import cookieParser from "cookie-parser";
-import * as Sentry from "@sentry/node";
+// import * as Sentry from "@sentry/node";
 import { functionErrorHandler } from "./handlers/FunctionalErrorHandler";
 import { Server } from "socket.io";
 import { createServer } from "http";
@@ -20,7 +20,7 @@ dotnev.config();
 
 const app: Express = express();
 
-Sentry.setupExpressErrorHandler(app);
+// Sentry.setupExpressErrorHandler(app);
 app.use(
   cors({
     origin: "http://localhost:3000",

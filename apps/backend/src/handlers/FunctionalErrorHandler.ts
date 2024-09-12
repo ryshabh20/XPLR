@@ -1,12 +1,12 @@
 import { ApiError } from "./ApiError";
-import * as Sentry from "@sentry/node";
+// import * as Sentry from "@sentry/node";
 class ErrorHandler {
   public async handleError(err: Error): Promise<void> {
     console.log(
       "Error message from the centralized error-handling component",
       err
     );
-    Sentry.captureException(err);
+    // Sentry.captureException(err);
   }
 
   public isTrustedError(error: Error) {
