@@ -61,12 +61,16 @@ export default function AllConversations() {
                 : conversation?.latestMessage?.sender?.avatar
             }
             groupAvatar={
-              conversation.isGroup && [
-                conversation.participant[conversation.participant.length - 1]
-                  .user.avatar,
-                conversation.participant[conversation.participant.length - 2]
-                  .user.avatar,
-              ]
+              conversation.isGroup
+                ? [
+                    conversation.participant[
+                      conversation.participant.length - 1
+                    ].user.avatar,
+                    conversation.participant[
+                      conversation.participant.length - 2
+                    ].user.avatar,
+                  ]
+                : []
             }
             fullname={
               conversation.isGroup

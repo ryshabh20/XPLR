@@ -28,6 +28,7 @@ model user {
   isGoogleAuthenticated Boolean       @default(false)
   conversation          participant[]
   messages              message[]
+  account               account?
 }
 
 model message {
@@ -66,4 +67,18 @@ model participant {
   user                user         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId              String
   isReadByParticipant Boolean      @default(false)
+}
+
+model account {
+  id            String   @id @default(cuid())
+  user          user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String   @unique
+  provider      String
+  refresh_token String
+  access_token  String
+  expires_at    Int
+  scope         String
+  id_token      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
 }
